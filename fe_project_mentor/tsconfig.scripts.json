@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Next 要求 jsx=preserve，但 tsx 在 node 端渲染 JSX 需要 automatic runtime，
+    // 两者不能共用一份配置。脚本统一用这份。
+    "jsx": "react-jsx"
+  }
+}

@@ -1,0 +1,6 @@
+swagger-mcp-server/node_modules
+test
+archive
+docs/requirements/R-*
+get-plan/plans/*
+node_modules/

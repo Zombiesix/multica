@@ -1,0 +1,9 @@
+{
+  "name": "agent-work",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AgentTeam 工作区：需求获取与前端需求流水线",
+  "scripts": {
+    "om": "node om/server.js"
+  }
+}
