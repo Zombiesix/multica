@@ -1,0 +1,4 @@
+.venv/
+.pageindex_storage/
+__pycache__/
+*.pyc
