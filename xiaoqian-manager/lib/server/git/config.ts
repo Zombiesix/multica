@@ -15,7 +15,11 @@ const DEFAULT_REPOS = [
   "iho-aers-web",
   "iho-cssd-ui",
   "iho-cssd-ui-mobile",
+  "iho-ehr-ui",
+  "iho-haimis-ui",
   "iho-icis-ui",
+  "iho-medical-record-ui",
+  "iho-medical-ui",
   "iho-nbs-web",
   "iho-nurse-manager-ui",
   "iho-pathology-ui",
@@ -27,7 +31,12 @@ const DEFAULT_JENKINS: Record<string, string> = {
   "iho-cssd-ui": "http://192.168.1.120:9990/jenkins/job/iho-cssd-web/build",
   "iho-cssd-ui-mobile":
     "http://192.168.1.120:9990/jenkins/job/iho-cssdH5消毒供应移动端/build",
+  "iho-ehr-ui": "http://192.168.1.120:9990/jenkins/job/iho-ehr-web/build",
+  "iho-haimis-ui": "http://192.168.1.120:9990/jenkins/job/iho-haimis-web/build",
   "iho-icis-ui": "http://192.168.1.120:9990/jenkins/job/iho-icis-web/build",
+  "iho-medical-record-ui":
+    "http://192.168.1.120:9990/jenkins/job/iho-mrms-web/build",
+  "iho-medical-ui": "http://192.168.1.120:9990/jenkins/job/iho-treat-web/build",
   "iho-nbs-web": "http://192.168.1.120:9990/jenkins/job/iho-nbs-web/build",
   "iho-nurse-manager-ui":
     "http://192.168.1.120:9990/jenkins/job/iho-hosnurse-web/build",

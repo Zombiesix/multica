@@ -5,17 +5,23 @@
 
 ## 映射表(按行从上到下匹配)
 
-| 平台产品/模块        | 判断规则(标题关键词)              | 命中 → gitlab 仓库目录      |
-| -------------------- | --------------------------------- | --------------------------- |
-| iHO-消毒供应系统     | 含「PDA」                         | → `iho-cssd-ui-mobile`      |
-|                      | 其他(含「PDA」之外的消毒供应需求) | → `iho-cssd-ui`             |
-| iHO-护理系统         | 含「护理大屏」                    | → `iho-nbs-web`             |
-|                      | 其他(含护理系统非大屏需求)        | → `iho-nurse-manager-ui`    |
-| iHO-输血管理系统     | (无条件)                          | → `reuseapp-blood-bank-web` |
-| iHO-重症监护临床系统 | (无条件)                          | → `iho-icis-ui`             |
-| iHO-护理管理系统     | (无条件)                          | → `iho-nurse-manager-ui`    |
-| iHO-不良事件上报     | (无条件)                          | → `iho-aers-web`            |
-| iHO-病理系统         | (无条件)                          | → `iho-pathology-ui`        |
+| 平台产品/模块        | 判断规则(标题关键词)              | 命中 → gitlab 仓库目录      | jenkins job      |
+| -------------------- | --------------------------------- | --------------------------- | ---------------- |
+| iHO-消毒供应系统     | 含「PDA」                         | → `iho-cssd-ui-mobile`      |                  |
+|                      | 其他(含「PDA」之外的消毒供应需求) | → `iho-cssd-ui`             |                  |
+| iHO-护理系统         | 含「护理大屏」                    | → `iho-nbs-web`             |                  |
+|                      | 其他(含护理系统非大屏需求)        | → `iho-nurse-manager-ui`    |                  |
+| iHO-输血管理系统     | (无条件)                          | → `reuseapp-blood-bank-web` |                  |
+| iHO-重症监护临床系统 | (无条件)                          | → `iho-icis-ui`             |                  |
+| iHO-护理管理系统     | (无条件)                          | → `iho-nurse-manager-ui`    |                  |
+| iHO-不良事件上报     | (无条件)                          | → `iho-aers-web`            |                  |
+| iHO-病理系统         | (无条件)                          | → `iho-pathology-ui`        |                  |
+| iHO-病案管理         | (无条件)                          | → `iho-medical-record-ui`   | `iho-mrms-web`   |
+| iHO-院感管理系统     | (无条件)                          | → `iho-haimis-ui`           | `iho-haimis-web` |
+| iHO-医技工作站       | (无条件)                          | → `iho-medical-ui`          | `iho-treat-web`  |
+| iHO-患者健康档案     | (无条件)                          | → `iho-ehr-ui`              | `iho-ehr-web`    |
+
+jenkins 地址前缀:`http://192.168.1.120:9990/jenkins/job/<job名>`
 
 ## 判断流程(喂食 skill 执行)
 
