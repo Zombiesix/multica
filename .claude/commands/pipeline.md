@@ -95,8 +95,10 @@ iteration+1；超 maxIteration(2) → 写 decisions.md 转人工。
 
 写 `worklog.md`、`state.json` 置 done → 张三验收 → 收尾：
 
-1. 提交 worktree 分支：commit message **只含标题一行、不加任何正文/描述**，标题取 `context.md` 的**需求标题**（`feat(R-<别名>): <标题>`；标题含中文时写消息文件用 `-F`，勿经 bash 中文参数）。禁止再追加改动摘要类正文——commit 信息里除标题行外不得有其他行。
-2. 合并回**固定分支**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master）→ `git merge feature/<别名>`
+> **收尾边界（铁律）**：AgentTeam 只做到「代码合并到**本地**固定分支 + 删除 worktree」，**绝不 commit 上推、绝不 push 远程**。远程提交 / 合并 / 推送是总流程 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成（含 cherry-pick）。AgentTeam 全程不触碰远程写操作——出问题只在本地可回滚、远程有人把关。
+
+1. 提交 worktree 分支**到本地** `feature/<别名>`：commit message **只含标题一行、不加任何正文/描述**，标题取 `context.md` 的**需求标题**（`feat(R-<别名>): <标题>`；标题含中文时写消息文件用 `-F`，勿经 bash 中文参数）。禁止再追加改动摘要类正文——commit 信息里除标题行外不得有其他行。此提交仅为本地合并用，**不代表推送**。
+2. 合并回**本地固定分支**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master）→ `git merge feature/<别名>`。**只合并到本地，禁止 `git push`、`git push -u`、`git fetch`+`push` 等任何远程写操作。**
 3. **删除 worktree 前先摘掉它指向主仓的 `node_modules` 符号链接**（`unlink <worktree>/node_modules`，若为链接）——`git worktree remove --force` 会顺着该链接删进主仓 node_modules，把主仓依赖清空。再 `git worktree remove --force ../<仓库>-<别名>`、`git branch -d feature/<别名>`。worktree 依赖一律走 pnpm 全局 store，禁止手动符号链接指回主仓工作树内部。
 4. 清 `file-lock.md`。worktree 名即 `<仓库>-<别名>`。
 
