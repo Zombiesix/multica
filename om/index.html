@@ -31,13 +31,12 @@
       </div>
 
       <div class="relative flex-1 max-w-xs min-w-[180px]">
-        <input id="searchInput" type="text" placeholder="搜索项目 / 负责人…"
+        <input id="searchInput" type="text" placeholder="搜索项目…"
           class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50" />
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
       </div>
 
       <div class="flex gap-2">
-        <button onclick="openGroupModal()" class="px-3 py-2 text-sm rounded-lg bg-slate-800 text-white hover:bg-slate-700">＋ 负责人</button>
         <button onclick="exportData()" class="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50">导出</button>
         <button id="updateBtn" onclick="updateWeek()" class="px-3 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-500">♻ 一键更新</button>
         <button onclick="resetData()" class="px-3 py-2 text-sm rounded-lg border border-rose-300 bg-white text-rose-600 hover:bg-rose-50">重置</button>
@@ -76,7 +75,6 @@
     <div class="absolute inset-0 bg-black/40" onclick="closeModal('projectModal')"></div>
     <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6 fade-in">
       <h3 id="projectModalTitle" class="text-lg font-semibold mb-4"></h3>
-      <input type="hidden" id="pfGroupIdx" />
       <input type="hidden" id="pfProjectId" />
       <label class="block text-sm mb-1">项目名 *</label>
       <input id="pfName" class="w-full px-3 py-2 mb-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
@@ -99,21 +97,6 @@
       <div class="flex justify-end gap-2">
         <button onclick="closeModal('projectModal')" class="px-4 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">取消</button>
         <button onclick="saveProject()" class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-500">保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= 弹窗：新增/重命名负责人 ================= -->
-  <div id="groupModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40" onclick="closeModal('groupModal')"></div>
-    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-6 fade-in">
-      <h3 id="groupModalTitle" class="text-lg font-semibold mb-4"></h3>
-      <input type="hidden" id="gfGroupIdx" />
-      <label class="block text-sm mb-1">负责人 *</label>
-      <input id="gfName" class="w-full px-3 py-2 mb-4 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none" />
-      <div class="flex justify-end gap-2">
-        <button onclick="closeModal('groupModal')" class="px-4 py-2 text-sm rounded-lg border border-slate-300 hover:bg-slate-50">取消</button>
-        <button onclick="saveGroup()" class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-500">保存</button>
       </div>
     </div>
   </div>
@@ -177,7 +160,7 @@
         state = await res.json();
       } catch (e) {
         alert('读取 /api/data 失败，请确认已用 node server.js 启动服务。\n' + e.message);
-        state = { groups: [] };
+        state = { projects: [] };
       }
       initWeekUserSelect();
       render();
@@ -199,27 +182,25 @@
       document.getElementById('updatedAt').textContent = t
         ? '上次保存：' + t.toLocaleString('zh-CN')
         : '';
-      document.getElementById('emptyState').classList.toggle('hidden', state.groups.length > 0);
-      document.getElementById('board').classList.toggle('hidden', state.groups.length === 0);
+      const hasProjects = (state.projects || []).length > 0;
+      document.getElementById('emptyState').classList.toggle('hidden', hasProjects);
+      document.getElementById('board').classList.toggle('hidden', !hasProjects);
     }
 
     function renderStats() {
       let total = 0, done = 0, doing = 0, todo = 0;
       const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
-      state.groups.forEach(g => {
-        const gMatch = !q || g.assignee.toLowerCase().includes(q);
-        g.projects.forEach(p => {
-          if (!gMatch && !p.name.toLowerCase().includes(q)) return;
-          total++;
-          if (p.packaged === 'done') done++; else if (p.packaged === 'doing') doing++; else todo++;
-        });
+      (state.projects || []).forEach(p => {
+        if (q && !p.name.toLowerCase().includes(q)) return;
+        total++;
+        if (p.packaged === 'done') done++; else if (p.packaged === 'doing') doing++; else todo++;
       });
       const cards = [
         { label: '项目总数', value: total, cls: 'bg-white border-slate-200 text-slate-800' },
         { label: '已完成', value: done, cls: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
         { label: '进行中', value: doing, cls: 'bg-amber-50 border-amber-200 text-amber-700' },
         { label: '未开始', value: todo, cls: 'bg-slate-100 border-slate-200 text-slate-500' },
-        { label: '负责人', value: state.groups.length, cls: 'bg-indigo-50 border-indigo-200 text-indigo-700' }
+        { label: '未完成', value: total - done, cls: 'bg-rose-50 border-rose-200 text-rose-600' }
       ];
       document.getElementById('statsBar').innerHTML = cards.map(c => `
         <div class="${c.cls} border rounded-xl px-4 py-3">
@@ -228,43 +209,47 @@
         </div>`).join('');
     }
 
+    // 聚合项目里所有用户手填的「新功能/修复」，扁平看板按项目展示（与 server.js projectFx 对齐）
+    function fxAggregated(p) {
+      if (!p) return { features: '', fixes: '' };
+      const feats = [], fixs = [];
+      const push = (list, t) => { if (t && !list.includes(t)) list.push(t); };
+      const buf = p.fxByUser || {};
+      if (typeof buf === 'object') {
+        Object.keys(buf).forEach(u => {
+          const b = buf[u] || {};
+          splitList(b.features).forEach(t => push(feats, t));
+          splitList(b.fixes).forEach(t => push(fixs, t));
+        });
+      }
+      if (!feats.length && p.features) splitList(p.features).forEach(t => push(feats, t));
+      if (!fixs.length && p.fixes) splitList(p.fixes).forEach(t => push(fixs, t));
+      return { features: feats.join('\n'), fixes: fixs.join('\n') };
+    }
+
     function renderBoard() {
       const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
       const container = document.getElementById('board');
-      container.innerHTML = state.groups.map((g, gi) => {
-        const gMatch = !q || g.assignee.toLowerCase().includes(q);
-        const projects = g.projects.filter(p => gMatch || p.name.toLowerCase().includes(q));
-        if (projects.length === 0 && !gMatch) return '';
-        const rows = projects.length
-          ? projects.map((p, pi)=> projectRow(g, gi, findProjIdx(g, p.id), p)).join('')
-          : `<div class="text-sm text-slate-400 py-3 text-center">该负责人暂无匹配项目</div>`;
-        return `
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden fade-in">
-            <header class="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
-              <div class="flex items-center gap-2">
-                <span class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">${g.assignee.slice(0,1)}</span>
-                <span class="font-semibold">${escapeHtml(g.assignee)}</span>
-                <span class="text-xs text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">${projects.length} 项</span>
-              </div>
-              <div class="flex gap-1">
-                <button title="新增项目" onclick="openProjectModal(${gi}, null, null)" class="text-sm w-7 h-7 rounded-lg hover:bg-indigo-100 hover:text-indigo-700">＋</button>
-                <button title="重命名负责人" onclick="openGroupModal(${gi})" class="text-sm w-7 h-7 rounded-lg hover:bg-slate-200">✎</button>
-                <button title="删除负责人" onclick="deleteGroup(${gi})" class="text-sm w-7 h-7 rounded-lg hover:bg-rose-100 hover:text-rose-600">🗑</button>
-              </div>
-            </header>
-            <div class="divide-y divide-slate-100">${rows}</div>
-          </section>`;
-      }).join('');
+      const projects = (state.projects || []).filter(p => !q || p.name.toLowerCase().includes(q));
+      const rows = projects.length
+        ? projects.map((p, pi) => projectRow(p, pi)).join('')
+        : `<div class="text-sm text-slate-400 py-3 text-center">暂无匹配项目</div>`;
+      container.innerHTML = `
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden fade-in">
+          <header class="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold">全部项目</span>
+              <span class="text-xs text-slate-400 bg-white border border-slate-200 rounded-full px-2 py-0.5">${projects.length} 项</span>
+            </div>
+            <button title="新增项目" onclick="openProjectModal(null)" class="text-sm px-2.5 py-1 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50">＋ 新增项目</button>
+          </header>
+          <div class="divide-y divide-slate-100">${rows}</div>
+        </section>`;
     }
 
-    // find real index of project (robust to filtered rendering)
-    function findProjIdx(g, id) {
-      return g.projects.findIndex(p => p.id === id);
-    }
-
-    function projectRow(g, gi, pi, p) {
+    function projectRow(p, pi) {
       const meta = PACKAGED_META[p.packaged] || PACKAGED_META.todo;
-      const fx = fxFor(p, g.assignee);
+      const fx = fxAggregated(p);
       return `
         <div class="px-5 py-3 flex items-center gap-4 hover:bg-slate-50/70 transition">
           <div class="flex-1 min-w-0">
@@ -275,11 +260,11 @@
             ${p.remark ? `<div class="text-xs text-slate-400 mt-0.5">备注：${escapeHtml(p.remark)}</div>` : ''}
           </div>
           ${p.version ? `<span class="text-xs font-mono bg-slate-100 text-slate-600 rounded-lg px-2 py-1 whitespace-nowrap">v${escapeHtml(p.version)}</span>` : ''}
-          <button title="点击切换打包状态" onclick="cycleStatus(${gi}, ${pi})"
+          <button title="点击切换打包状态" onclick="cycleStatus(${pi})"
             class="px-2.5 py-1 text-xs font-medium rounded-full border whitespace-nowrap ${meta.cls}">${meta.label}</button>
           <div class="flex gap-1 whitespace-nowrap">
-            <button onclick="openProjectModal(${gi}, ${findProjIdx(g, p.id)}, null)" title="编辑" class="text-sm w-7 h-7 rounded-lg hover:bg-slate-200">✎</button>
-            <button onclick="deleteProject(${gi}, ${findProjIdx(g, p.id)})" title="删除" class="text-sm w-7 h-7 rounded-lg hover:bg-rose-100 hover:text-rose-600">🗑</button>
+            <button onclick="openProjectModal(${pi})" title="编辑" class="text-sm w-7 h-7 rounded-lg hover:bg-slate-200">✎</button>
+            <button onclick="deleteProject(${pi})" title="删除" class="text-sm w-7 h-7 rounded-lg hover:bg-rose-100 hover:text-rose-600">🗑</button>
           </div>
         </div>`;
     }
@@ -289,18 +274,17 @@
     }
 
     // ---- 状态切换 ----
-    function cycleStatus(gi, pi) {
-      const p = state.groups[gi].projects[pi];
+    function cycleStatus(pi) {
+      const p = state.projects[pi];
       p.packaged = NEXT_STATUS[p.packaged] || 'todo';
       save();
     }
 
     // ---- 项目 CRUD ----
-    function openProjectModal(gi, pi, e) {
+    function openProjectModal(pi) {
       document.getElementById('projectModalTitle').textContent = pi === null ? '新增项目' : '编辑项目';
-      document.getElementById('pfGroupIdx').value = gi;
       document.getElementById('pfProjectId').value = pi;
-      const p = pi !== null ? state.groups[gi].projects[pi] : { name:'', statusText:'', packaged:'todo', version:'', remark:'' };
+      const p = pi !== null ? state.projects[pi] : { name:'', statusText:'', packaged:'todo', version:'', remark:'' };
       const fx = fxFor(p, currentUser);
       document.getElementById('pfName').value = p.name;
       document.getElementById('pfPackaged').value = p.packaged;
@@ -313,9 +297,8 @@
     }
 
     function saveProject() {
-      const gi = +document.getElementById('pfGroupIdx').value;
       const pi = document.getElementById('pfProjectId').value;
-      const idx = pi === 'null' ? null : +pi;
+      const idx = pi === 'null' || pi === 'undefined' ? null : +pi;
       const name = document.getElementById('pfName').value.trim();
       if (!name) { alert('请输入项目名'); return; }
       const obj = {
@@ -330,10 +313,10 @@
       if (idx === null) {
         obj.id = 'p-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
         obj.fxByUser = { [currentUser]: { features, fixes } };
-        state.groups[gi].projects.push(obj);
+        state.projects.push(obj);
       } else {
-        Object.assign(state.groups[gi].projects[idx], obj);
-        const proj = state.groups[gi].projects[idx];
+        Object.assign(state.projects[idx], obj);
+        const proj = state.projects[idx];
         proj.fxByUser = proj.fxByUser || {};
         proj.fxByUser[currentUser] = { features, fixes };
       }
@@ -341,39 +324,9 @@
       closeModal('projectModal');
     }
 
-    function deleteProject(gi, pi) {
-      if (!confirm(`删除项目「${state.groups[gi].projects[pi].name}」？`)) return;
-      state.groups[gi].projects.splice(pi, 1);
-      save();
-    }
-
-    // ---- 负责人 CRUD ----
-    function openGroupModal(gi) {
-      document.getElementById('groupModalTitle').textContent = gi === null ? '新增负责人' : '重命名负责人';
-      document.getElementById('gfGroupIdx').value = gi;
-      document.getElementById('gfName').value = gi === null ? '' : state.groups[gi].assignee;
-      showModal('groupModal');
-    }
-
-    function saveGroup() {
-      const gi = document.getElementById('gfGroupIdx').value;
-      const idx = gi === 'null' ? null : +gi;
-      const name = document.getElementById('gfName').value.trim();
-      if (!name) { alert('请输入负责人'); return; }
-      if (idx === null) {
-        state.groups.push({ assignee: name, projects: [] });
-      } else {
-        state.groups[idx].assignee = name;
-      }
-      save();
-      closeModal('groupModal');
-    }
-
-    function deleteGroup(gi) {
-      const g = state.groups[gi];
-      const noun = g.projects.length ? `（含 ${g.projects.length} 个项目）` : '';
-      if (!confirm(`删除负责人「${g.assignee}」${noun}？项目也会一并删除。`)) return;
-      state.groups.splice(gi, 1);
+    function deleteProject(pi) {
+      if (!confirm(`删除项目「${state.projects[pi].name}」？`)) return;
+      state.projects.splice(pi, 1);
       save();
     }
 
@@ -393,7 +346,7 @@
 
     function moduleToProject() {
       const map = {};
-      (state.groups || []).forEach(g => (g.projects || []).forEach(p => { map[p.name] = p; }));
+      (state.projects || []).forEach(p => { map[p.name] = p; });
       return map;
     }
 
@@ -445,7 +398,7 @@
 
     // ---- 导出 ----
     async function exportData() {
-      const notDone = (state.groups || []).flatMap(g => g.projects || []).filter(p => p.packaged !== 'done');
+      const notDone = (state.projects || []).filter(p => p.packaged !== 'done');
       if (notDone.length) {
         showToast(`有 ${notDone.length} 个项目未完成，请先全部改为「已完成」再导出`);
         return;
@@ -519,12 +472,12 @@
     // ---- 重置 ----
     function resetData() {
       if (!confirm('是否重置、数据清空，请确保已经导出备份')) return;
-      (state.groups || []).forEach(g => (g.projects || []).forEach(p => {
+      (state.projects || []).forEach(p => {
         p.features = '';
         p.fixes = '';
         p.fxByUser = {};
         p.packaged = 'doing';
-      }));
+      });
       state.currentWeekFinished = [];
       state.currentWeekByUser = {};
       save();

@@ -183,7 +183,7 @@ function uniqItems(list) {
 function buildMarkdown(data) {
   const byModule = weekModulesByKey(data);
   const known = new Set();
-  (data.groups || []).forEach(g => (g.projects || []).forEach(p => known.add(p.name)));
+  (data.projects || []).forEach(p => known.add(p.name));
   // 全文级去重：前后端协同任务可能同时挂在多人名下，整个文档只保留首次出现
   const seen = new Set();
   const takeGlobal = list => (list || []).filter(t => {
@@ -193,27 +193,25 @@ function buildMarkdown(data) {
     return true;
   });
   const blocks = [];
-  (data.groups || []).forEach(g => {
-    (g.projects || []).forEach(p => {
-      const pf = projectFx(p);
-      const feats = takeGlobal(uniqItems((byModule[p.name] || []).concat(pf.feats)));
-      const fixs = takeGlobal(uniqItems(pf.fixs));
-      const lines = [
-        `# ${p.name}`,
-        '',
-        `# ${p.version || ''}`,
-        '',
-        '#### ✨Feats',
-        ''
-      ];
-      feats.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
-      if (fixs.length) {
-        lines.push('');
-        lines.push('#### 🐛Fixs', '');
-        fixs.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
-      }
-      blocks.push(lines.join('\n'));
-    });
+  (data.projects || []).forEach(p => {
+    const pf = projectFx(p);
+    const feats = takeGlobal(uniqItems((byModule[p.name] || []).concat(pf.feats)));
+    const fixs = takeGlobal(uniqItems(pf.fixs));
+    const lines = [
+      `# ${p.name}`,
+      '',
+      `# ${p.version || ''}`,
+      '',
+      '#### ✨Feats',
+      ''
+    ];
+    feats.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
+    if (fixs.length) {
+      lines.push('');
+      lines.push('#### 🐛Fixs', '');
+      fixs.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
+    }
+    blocks.push(lines.join('\n'));
   });
   // 本周已完成里、看板没有对应项目的孤儿 module，独立导出
   Object.keys(byModule).filter(m => !known.has(m)).forEach(m => {

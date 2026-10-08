@@ -1,156 +1,251 @@
 {
-  "updatedAt": "2026-09-28T00:57:25.362Z",
-  "groups": [
+  "updatedAt": "2026-10-08T09:03:34.273Z",
+  "projects": [
     {
-      "assignee": "王洁",
-      "projects": [
-        {
-          "id": "p-1",
-          "name": "iHO-重症监护临床系统",
-          "statusText": "",
-          "packaged": "doing",
-          "version": "4.9.2",
-          "remark": "",
+      "id": "p-1",
+      "name": "iHO-重症监护临床系统",
+      "statusText": "",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {
+        "郑枫鸿": {
           "features": "",
-          "fixes": "",
-          "fxByUser": {}
+          "fixes": ""
         }
-      ]
+      }
     },
     {
-      "assignee": "卢友路",
-      "projects": [
-        {
-          "id": "p-2",
-          "name": "iHO-护理系统",
-          "statusText": "代码已合、其它人发",
-          "packaged": "doing",
-          "version": "4.9.4",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
-        },
-        {
-          "id": "p-3",
-          "name": "iHO-不良事件上报",
-          "statusText": "没有修改",
-          "packaged": "doing",
-          "version": "4.9.4",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
-        },
-        {
-          "id": "p-4",
-          "name": "护理大屏",
-          "statusText": "没有修改",
-          "packaged": "doing",
-          "version": "4.9.4",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
-        }
-      ]
+      "id": "p-2",
+      "name": "iHO-护理系统",
+      "statusText": "代码已合、其它人发",
+      "packaged": "doing",
+      "version": "4.9.4",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
     },
     {
-      "assignee": "郑枫鸿",
-      "projects": [
-        {
-          "id": "p-5",
-          "name": "iHO-消毒供应系统",
-          "statusText": "非周口的，web、pda",
-          "packaged": "doing",
-          "version": "4.9.2",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
-        },
-        {
-          "id": "p-9",
-          "name": "iHO-消毒供应系统-APP",
-          "statusText": "非周口的，web、pda",
-          "packaged": "doing",
-          "version": "4.9.2",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
-        },
-        {
-          "id": "p-6",
-          "name": "iHO-病理系统",
-          "statusText": "分支整好了，master、dev、dev-zjb",
-          "packaged": "doing",
-          "version": "4.9.2",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
-        },
-        {
-          "id": "p-8",
-          "name": "iHO-输血管理系统",
-          "statusText": "分支整好了，master、dev、dev-zjb",
-          "packaged": "doing",
-          "version": "4.9.2",
-          "remark": "",
-          "features": "",
-          "fixes": "",
-          "fxByUser": {}
+      "id": "p-3",
+      "name": "iHO-不良事件上报",
+      "statusText": "没有修改",
+      "packaged": "doing",
+      "version": "4.9.4",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-4",
+      "name": "护理大屏",
+      "statusText": "没有修改",
+      "packaged": "doing",
+      "version": "4.9.4",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-5",
+      "name": "iHO-消毒供应系统",
+      "statusText": "非周口的，web、pda",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-9",
+      "name": "iHO-消毒供应系统-APP",
+      "statusText": "非周口的，web、pda",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-6",
+      "name": "iHO-病理系统",
+      "statusText": "分支整好了，master、dev、dev-zjb",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {
+        "郑枫鸿": {
+          "features": "1.",
+          "fixes": ""
         }
-      ]
+      }
+    },
+    {
+      "id": "p-8",
+      "name": "iHO-输血管理系统",
+      "statusText": "分支整好了，master、dev、dev-zjb",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
     }
   ],
   "currentWeekFinished": [],
   "currentWeekByUser": {
-    "张九波": [
+    "张九波": [],
+    "陈家新": [],
+    "卢友路": [],
+    "郑枫鸿": [
       {
-        "module": "iHO-不良事件上报",
+        "module": "iHO-输血管理系统",
+        "count": 2,
+        "items": [
+          {
+            "SHOW_BUTTON_IDS": [
+              "1425740269270081536###1628757865835"
+            ],
+            "updated_time": "2026-10-08 09:14:47",
+            "updated_name": "郑枫鸿",
+            "json_field": "{\"question_classify\": \"2\"}",
+            "fact_start_time": "2026-10-08 09:14:27",
+            "title": "医生站输血医嘱界面血液分类和排序",
+            "userid": 143540,
+            "fact_finish_time": "2026-10-08 09:14:47",
+            "demand_level": "###{\"background\":\"#427BFF\",\"icon\":\"icon-dot-huifu\",\"value\":\"3\",\"change_text\":\"中\"}",
+            "max_hour": 4,
+            "demand_id": "57747607916707011",
+            "operatorColumn": [
+              "1425740269270081536###1628757865835"
+            ],
+            "id": "577476095186328911",
+            "task_level": 1,
+            "created_name": "詹益鑫",
+            "theUniqueKey": "bf1155a897bd491ca26d6e209846c08d0",
+            "created_time": "2026-09-20 11:39:49",
+            "task_fj": "[]",
+            "audit_state": "1",
+            "module": "iHO-输血管理系统",
+            "end_time": "2026-12-31 23:59:59",
+            "assign_description": "<p><b>需求场景/条件：</b>(请描述需求的提出背景及条件)</p>医师开嘱界面，血液品种按照品种分类，规格从大到小或小到大。例如冰冻血浆，规格从大到小或小到大。然后再下一个血液品种<br/><img src=\"https://cdn-v1.cnhis.com/storageFile/5545/crmapi/10/20260915/7a805bb8f792404e8514bd35cce104d4.png\"/><p><b>问题相关方：</b>(请描述提出需求问题的相关角色及来源)</p>临床医生<br/><br/><p><b>期望结果：</b>(请描述期望达到的结果和符合预期的功能)</p>",
+            "leval": "###{\"value\":\"1\",\"change_text\":\"研发\"}",
+            "source_type": "1",
+            "version_id": "2070433653572308994",
+            "created_by": "143658",
+            "version": "V2.3.5",
+            "start_time": "2026-09-20 11:39:32",
+            "schedule": "100",
+            "module_id": "1523850654512513025",
+            "updated_by": "143540",
+            "source_id": "577313907605713159",
+            "customer_name": "南宁市第一人民医院",
+            "task_type": "###{\"value\":\"\",\"change_text\":\"开发任务\"}",
+            "customer_id": 179998,
+            "real_development_hour": "0.0",
+            "username": "郑枫鸿(04379)",
+            "status": "###{\"value\":\"3\",\"change_text\":\"已完成\"}"
+          },
+          {
+            "SHOW_BUTTON_IDS": [
+              "1425740269270081536###1628757865835"
+            ],
+            "updated_time": "2026-10-08 09:11:29",
+            "updated_name": "郑枫鸿",
+            "json_field": "{\"question_classify\": \"2\"}",
+            "fact_start_time": "2026-10-08 09:11:08",
+            "title": "输血血袋过期提醒",
+            "userid": 143540,
+            "fact_finish_time": "2026-10-08 09:11:29",
+            "demand_level": "###{\"background\":\"#DB0000\",\"icon\":\"icon-dot-red\",\"value\":\"1\",\"change_text\":\"紧急\"}",
+            "max_hour": 4,
+            "demand_id": "577626195615151245",
+            "operatorColumn": [
+              "1425740269270081536###1628757865835"
+            ],
+            "id": "577626217106348774",
+            "task_level": 1,
+            "created_name": "詹益鑫",
+            "theUniqueKey": "965e3eafe2294e30bbfb3b6ff077071b1",
+            "created_time": "2026-09-24 17:28:18",
+            "task_fj": "[]",
+            "audit_state": "1",
+            "module": "iHO-输血管理系统",
+            "end_time": "2026-12-31 23:59:59",
+            "assign_description": "<p>目前血袋提醒只能把人员设置为所属科室才能提醒，输血科的人都是检验科的人，所以设置不了，要设置为通知给业务科室有输血科的员工</p>",
+            "leval": "###{\"value\":\"1\",\"change_text\":\"研发\"}",
+            "source_type": "1",
+            "version_id": "2070433653572308994",
+            "created_by": "143658",
+            "version": "V2.3.5",
+            "start_time": "2026-09-24 17:28:09",
+            "schedule": "100",
+            "module_id": "1523850654512513025",
+            "updated_by": "143540",
+            "source_id": "577516153107608025",
+            "customer_name": "靖西市中医医院",
+            "task_type": "###{\"value\":\"\",\"change_text\":\"开发任务\"}",
+            "customer_id": 159486,
+            "real_development_hour": "0.0",
+            "username": "郑枫鸿(04379)",
+            "status": "###{\"value\":\"3\",\"change_text\":\"已完成\"}"
+          }
+        ]
+      },
+      {
+        "module": "iHO-病理系统",
         "count": 1,
         "items": [
           {
             "SHOW_BUTTON_IDS": [
               "1425740269270081536###1628757865835"
             ],
-            "updated_time": "2026-09-28 08:45:05",
-            "updated_name": "张九波",
-            "json_field": "{}",
-            "fact_start_time": "2026-09-24 09:59:27",
-            "title": "不良事件鱼骨图二级因素自动转打印兼容",
-            "userid": 141695,
-            "fact_finish_time": "2026-09-28 08:45:05",
+            "updated_time": "2026-10-08 09:07:26",
+            "updated_name": "郑枫鸿",
+            "json_field": "{\"question_classify\": \"2\"}",
+            "fact_start_time": "2026-10-08 09:06:58",
+            "title": "病理材料借阅的原单位意见字数限制增加到1000",
+            "userid": 143540,
+            "fact_finish_time": "2026-10-08 09:07:26",
             "demand_level": "###{\"background\":\"#427BFF\",\"icon\":\"icon-dot-huifu\",\"value\":\"3\",\"change_text\":\"中\"}",
-            "max_hour": 8,
-            "demand_id": "57750792630149951",
+            "max_hour": 2,
+            "demand_id": "577797622081549554",
             "operatorColumn": [
               "1425740269270081536###1628757865835"
             ],
-            "id": "577507944154744656",
-            "task_level": 2,
-            "created_name": "黎凯",
-            "theUniqueKey": "aee6422b3e8341ebb1c43155354fd2000",
-            "created_time": "2026-09-21 09:15:46",
+            "id": "577797658511433191",
+            "task_level": 1,
+            "created_name": "詹益鑫",
+            "theUniqueKey": "f6b64ab38ef94fdeb41c66d578fba20a2",
+            "created_time": "2026-09-29 13:44:16",
             "task_fj": "[]",
             "audit_state": "1",
-            "module": "iHO-不良事件上报",
-            "end_time": "2027-08-06 23:59:59",
-            "assign_description": "1",
+            "module": "iHO-病理系统",
+            "end_time": "2026-12-31 23:59:59",
+            "assign_description": "<p><b>需求场景/条件：</b>(请描述需求的提出背景及条件)</p><img src=\"https://cdn-v1.cnhis.com/storageFile/5545/crmapi/6/20260928/ee25c106ed9e4cf894c66cee49bc80bb.jpg\"/><p><b>问题相关方：</b>(请描述提出需求问题的相关角色及来源)</p><br/><br/><p><b>期望结果：</b>(请描述期望达到的结果和符合预期的功能)</p>",
             "leval": "###{\"value\":\"1\",\"change_text\":\"研发\"}",
-            "version_id": "2085240615673622529",
-            "created_by": "82264",
-            "version": "V2.0.5",
-            "start_time": "2026-09-21 09:15:30",
-            "schedule": "0",
-            "module_id": "1539177424962912258",
-            "updated_by": "141695",
+            "source_type": "1",
+            "version_id": "2070433804198154242",
+            "created_by": "143658",
+            "version": "V3.1.6",
+            "start_time": "2026-09-29 13:44:02",
+            "schedule": "100",
+            "module_id": "1523850477009567746",
+            "updated_by": "143540",
+            "source_id": "577759459622417688",
+            "customer_name": "北京南郊肿瘤医院",
             "task_type": "###{\"value\":\"\",\"change_text\":\"开发任务\"}",
-            "customer_id": 258772,
-            "real_development_hour": "94.8",
-            "username": "张九波(03376)",
+            "customer_id": 41122,
+            "real_development_hour": "0.0",
+            "username": "郑枫鸿(04379)",
             "status": "###{\"value\":\"3\",\"change_text\":\"已完成\"}"
           }
         ]
