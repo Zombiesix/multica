@@ -4,6 +4,7 @@
   "private": true,
   "description": "AgentTeam 工作区：需求获取与前端需求流水线",
   "scripts": {
-    "om": "node om/server.js"
+    "om": "node om/server.js",
+    "recon": "node scripts/recon.mjs"
   }
 }
