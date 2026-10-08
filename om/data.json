@@ -98,6 +98,50 @@
       "features": "",
       "fixes": "",
       "fxByUser": {}
+    },
+    {
+      "id": "p-10",
+      "name": "iHO-病案管理",
+      "statusText": "分支整好了，master、dev、dev-zjb",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-11",
+      "name": "iHO-院感管理系统",
+      "statusText": "分支整好了，master、dev、dev-zjb",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-12",
+      "name": "iHO-医技工作站",
+      "statusText": "分支整好了，master、dev、dev-zjb",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
+    },
+    {
+      "id": "p-13",
+      "name": "iHO-患者健康档案",
+      "statusText": "分支整好了，master、dev、dev-zjb",
+      "packaged": "doing",
+      "version": "4.9.2",
+      "remark": "",
+      "features": "",
+      "fixes": "",
+      "fxByUser": {}
     }
   ],
   "currentWeekFinished": [],
