@@ -26,6 +26,18 @@
 - 需求标题与一句需求描述进了 context.md 顶部，planner 据此快速理解，plan.md 生成更快更准
   已接入则跳过，直接读 `state.json` 定下一步。
 
+> **记忆增强（可选，全链路软降级）**：以下所有 `hindsight-memo.py` 调用都是**尽力而为**——
+> Hindsight 未起 / 无网络 / 接口异常 → 产出空结果、跳过该步，**绝不阻塞流水线、绝不编造**。
+> `python scripts/hindsight-memo.py recall --bank X --query Q --out FILE` 输出为 JSON，
+> 非空才当作命中；为空则删除该文件、不写进任何文档。
+
+记忆增强（init 喂食后执行）：
+```
+python scripts/hindsight-memo.py recall --bank multica-project --query "<需求标题+产品/模块>" --budget 500 --out docs/requirements/<别名>/recall-history.md
+python scripts/hindsight-memo.py recall --bank <产品线bank> --query "<需求标题>" --budget 800 --out docs/requirements/<别名>/recall-history-line.md
+若以上文件非空，把命中摘要以「## 历史参考（Hindsight）」小节追加进 context.md 末尾（注明来源需求ID）；为空则删除这两个文件。
+```
+
 ### planning → 先 recon，再 @planner（仅 full）
 
 委派 planner 前，主对话先跑一次事实底稿（确定性，覆盖式）：
@@ -36,12 +48,21 @@ node scripts/recon.mjs A-001
 
 产出 `docs/requirements/A-001/recon.md`。跑失败或底稿标「不支持 / 接口层未解析」不阻塞——照常委派，由 planner 自行 Grep 补位。
 
+委派 planner 前，主对话再跑一次 `li-expertise`（人工思想库）recall，产物给 planner 读（软降级，空则不给）：
+
+```
+python scripts/hindsight-memo.py recall --bank li-expertise --query "<本需求涉及的技术点>" --budget 600 --out docs/requirements/A-001/recall-expertise.md
+```
+
 ```
 请作为 planner 处理需求 A-001。
-- 读 context: docs/requirements/A-001/context.md
+- 读 context: docs/requirements/A-001/context.md（含「历史参考」，可能为空）
 - 读事实底稿: docs/requirements/A-001/recon.md（确定性产出；为空/标「不支持」时自行 Grep，别当结论）
+- 可选读记忆: docs/requirements/A-001/recall-expertise.md（li-expertise 命中摘要；文件缺失/为空即无记忆）
+  若命中人工设计偏好，plan.md 的方案取舍须显式对齐或说明偏离理由；偏离写成 Q。
+  若记忆与仓库现状冲突（如 bank 说用 Options API、实际代码已 Composition）→ 升级为 M1/M2… 问题，不猜不覆盖。
 - 有不确定的问题按编号写入 questions.md 并暂停等答案
-- 计划写入 plan.md，必须含「将改动文件清单」
+- 计划写入 plan.md，必须含「将改动文件清单」；如有相关架构约定，写入 plan.md「相关约定」小节
 - 改动敏感文件时写成 Q
 返回:只一行摘要(plan.md 路径 + 问题数)
 ```
@@ -49,6 +70,12 @@ node scripts/recon.mjs A-001
 ### plan_confirm → 主对话 + 张三
 
 读 questions.md 展示 → 张三答 answers.md(按编号) → 确认拍板写 decisions.md(时间/决策/拍板人/原因)。
+
+拍板写入 decisions.md 后，**回流入库（关键回流点）**：只 retain **有理由的拍板**（决策 + 为什么）；纯确认类（"可以，就这样"）不入库。逐条执行（软降级，失败跳过）：
+```
+python scripts/hindsight-memo.py retain --bank multica-project --content "<决策> 因为 <理由>" --context "R-<别名> decisions <Q号>"      # 全局件
+python scripts/hindsight-memo.py retain --bank <产品线bank> --content "<决策> 因为 <理由>" --context "R-<别名> decisions <Q号>"    # 产品线件
+```
 
 ### coding → @coder
 
@@ -63,10 +90,18 @@ node scripts/recon.mjs A-001
 
 ### code_review → @reviewer（仅 full）
 
+委派 reviewer 前，主对话跑一次评审画像 recall（软降级，空则不给）：
+
+```
+python scripts/hindsight-memo.py recall --bank li-expertise --query "<本需求改动涉及的技术点>" --budget 1000 --out docs/requirements/A-001/recall-expertise.md
+```
+
 ```
 请作为 reviewer 审查 A-001。
 - 读 git diff 和 plan.md(含「将改动文件清单」)
 - 对照 test-report.md 核验测试是否真实跑通
+- 可选读记忆: docs/requirements/A-001/recall-expertise.md（li-expertise 人工偏好；文件缺失/为空即无）
+  对照命中偏好逐条标 符合/偏离(原因)，出 review.md「口味符合度」节；发现此前纠正过的问题再犯 → 标「重复问题」
 - 按 rubric 出 review.md，标记 blocker/suggestion/nit
 返回:只摘要(blocker 数 + 其余条数)
 ```
@@ -81,6 +116,12 @@ node scripts/recon.mjs A-001
 
 iteration+1；超 maxIteration(2) → 写 decisions.md 转人工。
 
+blocker 清空后，把**本轮 blocker 根因**回流入库（软降级，失败跳过）：
+```
+python scripts/hindsight-memo.py retain --bank <产品线bank> --content "<本轮 blocker 根因>" --context "R-<别名> fixing"    # 技术类
+python scripts/hindsight-memo.py retain --bank li-expertise --content "<人工介入的口味问题根因>" --context "R-<别名> fixing"  # 口味类
+```
+
 ### verify → @coder
 
 ```
@@ -94,6 +135,13 @@ iteration+1；超 maxIteration(2) → 写 decisions.md 转人工。
 ### done → 主对话
 
 写 `worklog.md`、`state.json` 置 done → 张三验收 → 收尾：
+
+复盘（一次性 reflect，**人工门禁**；软降级，失败跳过）：
+```bash
+python scripts/hindsight-memo.py reflect --bank <产品线bank> --query "本需求(R-<别名>)实施中有哪些值得后续需求继承的经验和坑" --out docs/requirements/<别名>/reflect-line.md
+python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(R-<别名>)中人工否决或纠正了哪些方案，背后的偏好是什么" --out docs/requirements/<别名>/reflect-expertise.md
+```
+把 reflect 摘要贴出来**给张三过目**；人工点头后，再把结论 retain 回库（`--context "R-<别名> 复盘"`）。**reflect 不自动入库**——防止 LLM 幻觉污染记忆；这与现状"人工只卡门禁"一致。
 
 > **收尾边界（铁律）**：AgentTeam 只做到「代码合并到**本地**固定分支 + 删除 worktree」，**绝不 commit 上推、绝不 push 远程**。远程提交 / 合并 / 推送是总流程 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成（含 cherry-pick）。AgentTeam 全程不触碰远程写操作——出问题只在本地可回滚、远程有人把关。
 

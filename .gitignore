@@ -5,3 +5,4 @@ docs/requirements/R-*
 get-plan/plans/*
 node_modules/
 .teamwork/auth.txt
+scripts/*.env

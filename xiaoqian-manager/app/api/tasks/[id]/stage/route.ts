@@ -4,6 +4,7 @@ import { STAGE_KEYS, StageStatus } from "@/lib/domain/schema";
 import { readTasks, updateTask } from "@/lib/server/store";
 import { pushDevOperation } from "@/lib/server/teamwork/client";
 import { buildDeployMessage, runDeployGit } from "@/lib/server/git/deploy";
+import { retain } from "@/lib/server/hindsight/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,12 @@ export async function PATCH(
       });
       // 先写协作平台；失败（含登录失效）则中断，不落本地 tasks.json
       await pushDevOperation(id);
+      // ⑤部署成功 → 记一条已部署状态进记忆（软降级：Hindsight 没起就静默跳过，不阻塞保存）
+      await retain(
+        "multica-project",
+        `需求 ${id}（${existing.title}）已部署到 ${targetBranch}（协作平台操作已同步）`,
+        `R-${id.slice(-6)} deploy`
+      );
     }
     const now = new Date().toISOString();
     const task = await updateTask(id, (t) => ({

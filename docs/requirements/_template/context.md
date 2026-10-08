@@ -20,3 +20,8 @@
 ## 关联代码位置
 
 （可选，若有已知入口）
+
+## 历史参考（Hindsight 注入，可选）
+
+（init 阶段 orchestrator 执行 `hindsight-memo.py recall` 后，把命中的历史拍板/同类需求决策摘要追加在此，
+注明来源需求 ID；**没有命中就整节留空/删掉，禁止编造**。planner 只读摘要，不直连记忆。）

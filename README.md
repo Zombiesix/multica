@@ -199,6 +199,78 @@ fe_project_mentor/      小游导师(独立,暂缓,见 §7)
 
 ---
 
+## 9. Hindsight 记忆系统（Phase 1 已上线）
+
+> 给 6 步流水线加"学习型记忆"：人工的拍板、纠正、否决理由沉淀为 Agent 可检索记忆，
+> 让第 N+1 个需求吃到前 N 个的人工经验。方案文档见
+> [docs/hindsight-实施方案.md](docs/hindsight-实施方案.md)。
+
+### 架构（本机 Docker 一容器搞定）
+
+```text
+┌─ Docker 容器 hindsight:slim（API :8888 / UI :9999，--restart unless-stopped）┐
+│   内置 PostgreSQL + pgvector（卷 hindsight-data）                              │
+│   LLM 抽取 = 火山方舟 deepseek-v4.1-flash（Agent Plan Key）                   │
+│   Embedding  = 硅基流动 BAAI/bge-m3 1024维（免费）                            │
+│   Reranker = rrf（纯算法，零外部依赖）                                        │
+└──────────┬───────────────────────────────────────────────────────────────────┘
+           │ REST :8888
+  ┌────────┴──────────────────────────────────────────┐
+  │ AgentTeam 侧: scripts/hindsight-memo.py（CLI 三命令）│
+  │ Web 侧: xiaoqian-manager/lib/server/hindsight/client.ts │
+  └─────────────────────────────────────────────────────┘
+```
+
+### 部署步骤（已完成，2026-10-08）
+
+1. `yarn setup` —— 自动生成 `scripts/hindsight.env`（从 [hindsight.env.example](scripts/hindsight.env.example) 复制，模板已入库），填入你的 Ark Plan Key + SiliconFlow Key
+2. `docker pull ghcr.nju.edu.cn/vectorize-io/hindsight:latest-slim`（ghcr.io 被墙，用南大镜像）
+3. `docker run -d --name hindsight --restart unless-stopped -p 8888:8888 -p 9999:9999 --env-file scripts/hindsight.env -v hindsight-data:/home/hindsight/.pg0 hindsight:slim`
+4. `python scripts/ensure-banks.py`（建 li-expertise / multica-project / iho-cssd-ui 3 库 + 预填 5 条静态规矩）
+
+> 模板里每个变量都有注释说明来源和注意事项；key 只留本地 `hindsight.env`，已被 gitignore。
+
+重启电脑后 Docker Desktop 自启 → 容器自动拉起，无需人工干预。
+
+### 踩过的坑（都排掉了）
+
+| 坑 | 解法 |
+|---|---|
+| npm 全局装过同名 `docker` 文档生成器，抢 PATH | 管理员 PowerShell 删 shim |
+| ghcr.io 国内被墙 | `ghcr.nju.edu.cn` 南大镜像 |
+| 完整版镜像 9GB | slim 版 1.88GB + 外部 embedding 服务 |
+| 方舟 Plan Key 路径隔离 | 只在 `/api/plan/v1` 有效，标准 `/api/v3` 一律 401 |
+| 方舟 embedding 全不能用 | 250515 即将下线；vision-251215 是多模态专用 API 格式不兼容；Plan Key 调不了 embeddings → **换 SiliconFlow bge-m3** |
+| pgvector HNSW 索引上限 2000 维 | bge-m3 原生 1024 维，天然合规 |
+| `RERANKER_PROVIDER=none` 启动报错 | 合法值没有 none，用 `rrf` |
+| recall/reflect 的 `budget` 传数字报 422 | 是枚举：`low` / `mid` / `high` |
+| 三处调用方端点全是文档假设 | 已对照 OpenAPI 实测修正（见下方真实端点） |
+
+### 真实 API 端点（OpenAPI 实测验证）
+
+| 操作 | 端点 | 请求体 |
+|---|---|---|
+| 建库 | `PUT /v1/default/banks/{bank_id}` | `{}` |
+| retain | `POST /v1/default/banks/{bank_id}/memories` | `{"items":[{"content":"...","context":"..."}]}` |
+| recall | `POST /v1/default/banks/{bank_id}/memories/recall` | `{"query":"...","budget":"low"}` |
+| reflect | `POST /v1/default/banks/{bank_id}/reflect` | `{"query":"..."}` |
+
+### 接入点（已接线）
+
+- **pipeline.md**：init recall / decisions retain / done reflect 人工门禁 / fixing retain / reviewer 画像
+- **planner.md**：记忆冲突 → 升级为 M1/M2 编号问题
+- **reviewer.md**：口味符合度 + 重复问题标记
+- **stage/route.ts**：⑤ deploy 成功 → retain「已部署」状态
+- 全程软降级：Hindsight 没起 → 返回空/跳过，绝不禁流水线
+
+### 下一步（Phase 2）
+
+1. 跑一个真实需求走完整流水线，验证各阶段 recall/retain 是否按预期触发
+2. 观察 recall 命中率，必要时调 budget 档位
+3. 拍板 retain 积累 ≥10 条后，评估是否开 ◇ 线（①④⑥ 可选阶段）
+
+---
+
 ## 附：project-map / 平台产品 → gitlab 仓库 映射
 
 > AgentTeam 喂食时据 PM 卡的「产品/模块 + 客户 + 标题关键词」查此表，决定 worktree 建在哪个 gitlab 仓库下。**由 张三 维护确认,AI 不猜。**

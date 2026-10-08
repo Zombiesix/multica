@@ -11,14 +11,21 @@ background: false
 
 输入：
 
-- `docs/requirements/<ID>/context.md`：需求标题 + 描述。
+- `docs/requirements/<ID>/context.md`：需求标题 + 描述（可能含「历史参考（Hindsight）」小节，可能是空）。
 - `docs/requirements/<ID>/recon.md`：**确定性事实底稿**（由 `scripts/recon.mjs` 生成），含路由表 / 业务模块 / 接口清单 / 组件反向引用。
+- `docs/requirements/<ID>/recall-expertise.md`：**可选**，li-expertise（人工思想库）命中摘要；文件缺失/为空 = 无记忆。
 - 已拍板决策 `decisions.md`、上一轮答案 `answers.md`（若有）。
 
 产物写入：
 
 - `docs/requirements/<ID>/plan.md`：计划正文，**必须含「将改动文件清单」小节**（这是并行 file-lock 的依据）。
 - `docs/requirements/<ID>/questions.md`：不确定的问题，**必须带编号 Q1/Q2…**。有关键问题就暂停，等张三回答。
+
+记忆约束：
+
+- 命中人工偏好时，plan.md 方案取舍须**显式对齐或说明偏离理由**；冲突拿不准写成 Q（记忆有误属正常，交由张三裁决修正）。
+- **M 类问题（M1/M2…）**：当记忆与仓库现状冲突（如 bank 说"本仓用 Options API"但实际代码已 Composition API），**不猜不覆盖**，升级成 M 类问题由张三裁决，裁决结果会回流修正记忆。
+- 记忆只是输入增强，不是依据；context.md「历史参考」为空 ≠ 没有任何历史，别据此断言。
 
 原则：
 
