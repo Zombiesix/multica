@@ -4,7 +4,10 @@
   "private": true,
   "description": "AgentTeam 工作区：需求获取与前端需求流水线",
   "scripts": {
+    "setup": "node scripts/ensure-auth.mjs && yarn --cwd xiaoyou-code-indexer && yarn --cwd fe_project_mentor && yarn --cwd xiaoqian-manager && yarn --cwd swagger-mcp-server",
+    "dev": "node scripts/dev.mjs",
     "om": "node om/server.js",
+    "xiaoqian": "yarn --cwd xiaoqian-manager dev",
     "recon": "node scripts/recon.mjs"
   }
 }
