@@ -2,7 +2,7 @@
 set -e
 
 NODE_CMD="node"
-SERVER_PATH="D:/agent-work/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/index.js"
+SERVER_PATH="D:/multica/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/index.js"
 
 claude mcp remove --scope user swagger-multi >/dev/null 2>&1 || true
 

@@ -174,7 +174,7 @@ git branch -d feature/<别名>
 | [fe_project_mentor/](fe_project_mentor/)       | 小游 · 前端项目导师:能带人读懂陌生前端项目并让理解沉淀成团队资产的 Agent(产物驱动 + 复述检验),基于 Claude Agent SDK                               | `yarn dev`(端口 3003);scan/teach/deliver 等脚本见其 package.json      |
 | [xiaoyou-code-indexer/](xiaoyou-code-indexer/) | Vue3 仓库静态索引器:扫描目标仓生成 ProjectMap(路由/模块/API 域/组件图/告警),CLI 或 stdio MCP 供 Agent 消费                                        | `node bin/cli.mjs <cmd> <repo>`;MCP 接入见其 README                   |
 
-> 注意:swagger-mcp-server 与 xiaoyou-code-indexer 的 README 中历史路径仍写 `D:\agent-work\...`,即本工作区旧路径,等价于现在的 `d:\multica`。
+> 注意:swagger-mcp-server 与 xiaoyou-code-indexer 的 README 中历史路径仍写 `D:\multica\...`,即本工作区旧路径,等价于现在的 `d:\multica`。
 
 ---
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 一次性脚手架：在 D:/agent-work/.xq-git-test 造一个带「本地裸远程」的测试仓库，
+# 一次性脚手架：在 D:/multica/.xq-git-test 造一个带「本地裸远程」的测试仓库，
 # 用来验证 runDeployGit 的 拉取/提交/推送/cherry-pick 全链路，不碰 gitea。
 # 用法: bash scripts/git-test-fixture.sh [happy|conflict]
 set -euo pipefail
 
-BASE=/d/agent-work/.xq-git-test
+BASE=/d/multica/.xq-git-test
 PHASE=${1:-happy}
 REPO="$BASE/repos/t-repo"
 
@@ -46,7 +46,7 @@ else
 fi
 
 cat > "$BASE/repos.json" <<'EOF'
-{"root":"D:/agent-work/.xq-git-test/repos","repos":["t-repo"],"branches":["dev","dev-zjb"]}
+{"root":"D:/multica/.xq-git-test/repos","repos":["t-repo"],"branches":["dev","dev-zjb"]}
 EOF
 
 echo "fixture ready: $BASE (phase=$PHASE, on $(git -C "$REPO" rev-parse --abbrev-ref HEAD))"

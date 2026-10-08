@@ -3,14 +3,14 @@ import path from "node:path";
 import type { GitOptions } from "@/lib/domain/git";
 
 // 部署节点可选的仓库与目标分支，来自本机配置文件（不入库，见 .gitignore 的 /data/）。
-// 形状：{ "root": "D:/agent-work/gitlab", "repos": [...], "branches": [...] }
+// 形状：{ "root": "D:/multica/gitlab", "repos": [...], "branches": [...] }
 // 读不到配置文件时退回内置默认值，保证下拉框不炸。
 
 interface GitConfig extends GitOptions {
   root: string;
 }
 
-const DEFAULT_ROOT = "D:/agent-work/gitlab";
+const DEFAULT_ROOT = "D:/multica/gitlab";
 const DEFAULT_REPOS = [
   "iho-aers-web",
   "iho-cssd-ui",

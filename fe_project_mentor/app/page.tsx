@@ -117,7 +117,7 @@ export default function Home() {
             className="input"
             value={pathInput}
             onChange={(e) => setPathInput(e.target.value)}
-            placeholder="d:/agent-work/gitlab/iho-icis-ui"
+            placeholder="d:/multica/gitlab/iho-icis-ui"
             spellCheck={false}
             autoComplete="off"
           />

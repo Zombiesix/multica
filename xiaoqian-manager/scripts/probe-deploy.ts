@@ -1,7 +1,7 @@
 // 验证 runDeployGit：对 scripts/git-test-fixture.sh 造的本地测试仓库跑全链路
 // （拉取 → 提交 → 推源分支 → cherry-pick 到目标分支 → 推目标分支）。
 // 用法: bash scripts/git-test-fixture.sh happy
-//       GIT_REPOS_FILE=/d/agent-work/.xq-git-test/repos.json yarn tsx scripts/probe-deploy.ts happy
+//       GIT_REPOS_FILE=/d/multica/.xq-git-test/repos.json yarn tsx scripts/probe-deploy.ts happy
 import { buildDeployMessage, runDeployGit } from "../lib/server/git/deploy";
 import { readGitOptions, resolveRepoPath } from "../lib/server/git/config";
 

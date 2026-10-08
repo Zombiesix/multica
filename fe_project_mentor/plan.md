@@ -218,7 +218,7 @@ confidence: high | medium | low
 - git 操作直接用本机 git CLI 和用户已有凭证。
 - 知识传播靠 **git 本身**：产物写进目标仓 `docs/`，用户自己 push，团队自然拿到。
   即"知识通过 git 传播，而不是通过平台传播"——与 4.2 的仓内知识库设计自洽。
-- 目标仓就在 `d:/agent-work/gitlab/` 下，小游自己在 `d:/agent-work/fe_project_mentor/`，
+- 目标仓就在 `d:/multica/gitlab/` 下，小游自己在 `d:/multica/fe_project_mentor/`，
   与既有 AgentTeam 流水线同处一个工作区，天然便于自测。
 
 **路径输入**：浏览器拿不到本地绝对路径（File System Access API 的 handle 也无法直接交给 Node），
@@ -315,7 +315,7 @@ yarn verify <仓路径>               # 验收断言
 - 组件图 145 SFC / 206 条边 / 385 个外部标签；自动导入清单取自 `components.d.ts`
 - **后端端点 322 个**，只有 1 个导出函数不打后端（纯日期工具函数）
 - 扫描 602 文件，耗时 ~550ms（远低于 10s 上限）
-- 越权路径（`d:/agent-work`、`C:/Users/.../.ssh`）一律 403
+- 越权路径（`d:/multica`、`C:/Users/.../.ssh`）一律 403
 - 全项目 `tsc --noEmit` 零报错
 
 ### 组件树的三种引用方式（重要发现）
@@ -546,7 +546,7 @@ MVP 六步的最后一块：把暂存区（`.xiaoyou/<仓>/docs/`）的知识写
 - `yarn verify:deliver` 14 项全过：分支创建、docs 写入、commit 不 push、同名跳过、
   手写文件不被覆盖、脏工作区拦截、已存在文件不覆盖。
 - `npx tsc --noEmit` 零报错。
-- **真实落库**（`yarn deliver d:/agent-work/gitlab/iho-icis-ui`）：
+- **真实落库**（`yarn deliver d:/multica/gitlab/iho-icis-ui`）：
   新建分支 `xiaoyou/docs-20260928`，commit `e357ef0`，写入 7 个文件
   （CONTEXT.md + 3 decisions + 3 glossary），1 条人工 confirmed 原样保留；
   目标仓原工作区干净，`dev` 分支改动未被污染。

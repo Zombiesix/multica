@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { readCredentials } from "./credentials";
 
-// 协作平台取数客户端。逻辑移植自 d:/agent-work/get-plan/fetch-plans.js
+// 协作平台取数客户端。逻辑移植自 d:/multica/get-plan/fetch-plans.js
 // （零依赖纯 fetch），保持原有接口行为与坑位注释，不要凭猜测改动。
 
 const BASE = "https://teamwork.cnhis.cc";

@@ -10,7 +10,7 @@ import ProjectMapView from "../lib/ui/ProjectMapView";
  * 交互仍须人工在浏览器里点。
  */
 function main(): void {
-  const target = process.argv[2] ?? "d:/agent-work/gitlab/iho-icis-ui";
+  const target = process.argv[2] ?? "d:/multica/gitlab/iho-icis-ui";
   const map = scanRepo(target);
 
   const html = renderToString(<ProjectMapView map={map} />);
@@ -19,7 +19,7 @@ function main(): void {
     ["仓库名", map.repo.name],
     ["路由条数", `${map.routes.length} 条`],
     ["组件树边数", `${map.components.stats.edgeCount} 条边`],
-    ["端点总数", `${map.apiDomains.flatMap(d => d.endpoints).length} 个`],
+    ["端点总数", `${map.apiDomains.flatMap((d) => d.endpoints).length} 个`],
   ];
 
   const failures: string[] = [];
@@ -35,7 +35,9 @@ function main(): void {
   const deepest = [...map.modules].sort((a, b) => b.treeSize - a.treeSize)[0];
   if (deepest) {
     const ok = html.includes(deepest.name);
-    console.log(`  [${ok ? "PASS" : "FAIL"}] 渲染含最大模块  ${deepest.name} (树 ${deepest.treeSize})`);
+    console.log(
+      `  [${ok ? "PASS" : "FAIL"}] 渲染含最大模块  ${deepest.name} (树 ${deepest.treeSize})`,
+    );
     if (!ok) failures.push("最大模块");
   }
 

@@ -21,7 +21,7 @@ const EXPECTED = {
   crossModuleChild: "src/page/nursing-record/nursing-record.vue",
 };
 
-const target = process.argv[2] ?? "d:/agent-work/gitlab/iho-icis-ui";
+const target = process.argv[2] ?? "d:/multica/gitlab/iho-icis-ui";
 const map = scanRepo(path.resolve(target));
 
 const failures: string[] = [];

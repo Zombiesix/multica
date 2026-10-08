@@ -6,9 +6,9 @@ import { mentorToolDefinitions } from "../lib/mentor/tools";
  * 讲解 + 复述检验（M2 第二切片）离线验收。
  * 不需要 LLM 的部分在这里断言；LLM 链路由 `yarn probe:agent` 与真实 teach 跑通验证。
  *
- * 用法：yarn verify:teach [仓路径]   默认 d:/agent-work/gitlab/iho-icis-ui
+ * 用法：yarn verify:teach [仓路径]   默认 d:/multica/gitlab/iho-icis-ui
  */
-const REPO = process.argv[2] ?? "d:/agent-work/gitlab/iho-icis-ui";
+const REPO = process.argv[2] ?? "d:/multica/gitlab/iho-icis-ui";
 
 let passed = 0;
 let failed = 0;

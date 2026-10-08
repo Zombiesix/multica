@@ -6,7 +6,7 @@
 
 ## 1. 背景与目标
 
-- 原配置位于项目级 `D:\agent-work\get-swagger\.mcp.json`，只有 4 个服务（nursing/icis/treat/cssd），且使用不带 `group` 参数的 `/v2/api-docs` 地址（已返回 404）。
+- 原配置位于项目级 `D:\multica\get-swagger\.mcp.json`，只有 4 个服务（nursing/icis/treat/cssd），且使用不带 `group` 参数的 `/v2/api-docs` 地址（已返回 404）。
 - swagger 网关要求使用分组参数，例如 `/v2/api-docs?group=defaultGroup`、`/v2/api-docs?group=3-护理计划（住院）`。
 - 目标：将 `swagger-multi` 转为当前电脑用户的**全局 MCP**，按分组正确配置所有服务。
 
@@ -26,7 +26,7 @@ C:\Users\zhangjiubo\.claude.json
     "swagger-multi": {
       "command": "node",
       "args": [
-        "D:/agent-work/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/index.js",
+        "D:/multica/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/index.js",
         "nursing-1-护理（住院）=http://192.168.1.211:9080/nursingswagger/v2/api-docs?group=1-%E6%8A%A4%E7%90%86%EF%BC%88%E4%BD%8F%E9%99%A2%EF%BC%89",
         "...（其余 9 个 nursing 分组，共 10 个）",
         "icis-default=http://192.168.1.211:9080/icisswagger/v2/api-docs?group=defaultGroup",
@@ -46,21 +46,21 @@ C:\Users\zhangjiubo\.claude.json
 
 ## 3. 服务与分组清单（共 13 个服务）
 
-| 服务名 | 分组 | 说明 |
-|---|---|---|
-| `nursing-1-护理（住院）` | `1-护理（住院）` | 住院护理 |
-| `nursing-2-护理（急诊）` | `2-护理（急诊）` | 急诊护理 |
+| 服务名                       | 分组                 | 说明                                  |
+| ---------------------------- | -------------------- | ------------------------------------- |
+| `nursing-1-护理（住院）`     | `1-护理（住院）`     | 住院护理                              |
+| `nursing-2-护理（急诊）`     | `2-护理（急诊）`     | 急诊护理                              |
 | `nursing-3-护理计划（住院）` | `3-护理计划（住院）` | 住院护理计划（含护理模板/诊断定义等） |
-| `nursing-4-护理计划（急诊）` | `4-护理计划（急诊）` | 急诊护理计划 |
-| `nursing-5-护理管理（住院）` | `5-护理管理（住院）` | 住院护理管理 |
-| `nursing-6-护理管理（急诊）` | `6-护理管理（急诊）` | 急诊护理管理 |
-| `nursing-7-移动医护` | `7-移动医护` | 移动医护 |
-| `nursing-8-护理大屏` | `8-护理大屏` | 护理大屏 |
-| `nursing-报告卡` | `报告卡` | 报告卡 |
-| `nursing-未分类` | `未分类` | 未分类接口 |
-| `icis-default` | `defaultGroup` | 重症（ICU）系统，含 `/icis/*` 接口 |
-| `treat-default` | `defaultGroup` | 治疗系统 |
-| `cssd-default` | `defaultGroup` | 消毒供应中心系统 |
+| `nursing-4-护理计划（急诊）` | `4-护理计划（急诊）` | 急诊护理计划                          |
+| `nursing-5-护理管理（住院）` | `5-护理管理（住院）` | 住院护理管理                          |
+| `nursing-6-护理管理（急诊）` | `6-护理管理（急诊）` | 急诊护理管理                          |
+| `nursing-7-移动医护`         | `7-移动医护`         | 移动医护                              |
+| `nursing-8-护理大屏`         | `8-护理大屏`         | 护理大屏                              |
+| `nursing-报告卡`             | `报告卡`             | 报告卡                                |
+| `nursing-未分类`             | `未分类`             | 未分类接口                            |
+| `icis-default`               | `defaultGroup`       | 重症（ICU）系统，含 `/icis/*` 接口    |
+| `treat-default`              | `defaultGroup`       | 治疗系统                              |
+| `cssd-default`               | `defaultGroup`       | 消毒供应中心系统                      |
 
 nursing 分组来源（`http://192.168.1.211:9080/nursingswagger/swagger-resources`）：
 
@@ -71,7 +71,7 @@ nursing 分组来源（`http://192.168.1.211:9080/nursingswagger/swagger-resourc
 本地补丁安装在：
 
 ```
-D:\agent-work\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build\services\loader.js
+D:\multica\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build\services\loader.js
 ```
 
 ### Bug 1：URL 解析截断（group 参数丢失）
@@ -97,8 +97,10 @@ D:\agent-work\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build
   ```js
   doc = response.data;
   if (typeof doc === "string") {
-      const repaired = doc.replace(/"example"\s*:\s*\[[^\]]*?\]/g, (m) => m.replace(/'/g, '"'));
-      doc = JSON.parse(repaired);
+    const repaired = doc.replace(/"example"\s*:\s*\[[^\]]*?\]/g, (m) =>
+      m.replace(/'/g, '"'),
+    );
+    doc = JSON.parse(repaired);
   }
   ```
 
@@ -112,14 +114,14 @@ D:\agent-work\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build
 
 重启 Claude Code（或重新加载 MCP）后生效。可用工具：
 
-| 工具 | 说明 |
-|---|---|
-| `list_services` | 列出所有服务 |
-| `list_endpoints` | 列出某服务全部接口（需 `service_name`） |
-| `search_apis` | 按关键字搜索接口 |
-| `get_endpoint_details` | 获取接口完整定义（参数、响应 schema） |
-| `get_schema` / `list_schemas` | 获取/列出 schema |
-| `debug_endpoint` / `generate_curl` | 调试请求 / 生成 curl |
+| 工具                               | 说明                                    |
+| ---------------------------------- | --------------------------------------- |
+| `list_services`                    | 列出所有服务                            |
+| `list_endpoints`                   | 列出某服务全部接口（需 `service_name`） |
+| `search_apis`                      | 按关键字搜索接口                        |
+| `get_endpoint_details`             | 获取接口完整定义（参数、响应 schema）   |
+| `get_schema` / `list_schemas`      | 获取/列出 schema                        |
+| `debug_endpoint` / `generate_curl` | 调试请求 / 生成 curl                    |
 
 示例服务名：`nursing-3-护理计划（住院）`、`icis-default`、`treat-default`、`cssd-default`。
 
@@ -127,15 +129,15 @@ D:\agent-work\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build
 
 所在服务：`icis-default`（分组 `defaultGroup`）
 
-| 项 | 值 |
-|---|---|
-| 路径 | `/icis/nursing-template/import` |
-| 方法 | POST |
-| 接口名 | 护理模板导入 |
-| 描述 | 重症系统配置-护理单配置页签-导入 |
-| 请求格式 | `multipart/form-data` |
-| 参数 | `file`（formData，文件类型，swagger 标注非必填） |
-| 返回 | HTTP 200，`通用返回结果«object»`（含 code/data/msg/success/errorData/subErrors） |
+| 项       | 值                                                                               |
+| -------- | -------------------------------------------------------------------------------- |
+| 路径     | `/icis/nursing-template/import`                                                  |
+| 方法     | POST                                                                             |
+| 接口名   | 护理模板导入                                                                     |
+| 描述     | 重症系统配置-护理单配置页签-导入                                                 |
+| 请求格式 | `multipart/form-data`                                                            |
+| 参数     | `file`（formData，文件类型，swagger 标注非必填）                                 |
+| 返回     | HTTP 200，`通用返回结果«object»`（含 code/data/msg/success/errorData/subErrors） |
 
 同分组相关路径（`/icis/nursing-template/*`）：`add`、`update`、`delete/{id}`、`list`、`list-by-department-id`、`searchPageByName`、`templateElements`、`getBckList`、`enableFlag`、`export`、`import`、`nursing-template-department/update-order`。
 
