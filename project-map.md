@@ -34,4 +34,4 @@ jenkins 地址前缀:`http://192.168.1.120:9990/jenkins/job/<job名>`
 
 - 新增 PM 卡时先查此表;查不到 → 在 feed 时向 张三 要,确认后回填,不许猜。
 - 仓库目录以 `gitlab/` 为基准,worktree 建在该仓下。
-- worktree 名 = `<gitlab 仓库目录名>-<别名>`(例 `iho-cssd-ui-R-001`),用完合并回该仓、提交、`git worktree remove` 清理。
+- worktree 名 = `<gitlab 仓库目录名>-<别名>`(例 `iho-cssd-ui-R-001`),用完把改动套回该仓本地固定分支工作区(不 add/commit,见 pipeline.md 收尾边界铁律)、`git worktree remove` 清理。

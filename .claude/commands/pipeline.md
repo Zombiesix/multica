@@ -142,7 +142,7 @@ python scripts/hindsight-memo.py retain --bank li-expertise --content "<人工�
 
 ### done → 主对话
 
-写 `worklog.md`、`state.json` 置 done → 张三验收 → 收尾：
+写 `worklog.md`、`state.json` 置 done → 收尾（改动落工作区、删 worktree）→ 张三在本地固定分支工作区上人工测试验收（④步，详见收尾边界铁律）：
 
 复盘（一次性 reflect，**人工门禁**；软降级，失败跳过）：
 ```bash
@@ -151,12 +151,15 @@ python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(
 ```
 把 reflect 摘要贴出来**给张三过目**；人工点头后，再把结论 retain 回库（`--context "R-<别名> 复盘"`）。**reflect 不自动入库**——防止 LLM 幻觉污染记忆；这与现状"人工只卡门禁"一致。
 
-> **收尾边界（铁律）**：AgentTeam 只做到「代码合并到**本地**固定分支 + 删除 worktree」，**绝不 commit 上推、绝不 push 远程**。远程提交 / 合并 / 推送是总流程 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成（含 cherry-pick）。AgentTeam 全程不触碰远程写操作——出问题只在本地可回滚、远程有人把关。
+> **收尾边界（铁律，2026-10-09 修订）**：AgentTeam 只做到「改动落入**本地固定分支工作区** + 删除 worktree」，**不进行 add / commit / push 任何代码**。固定分支=仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master），主仓 checkout 在该分支上，改动以**未提交**形式留在工作区。人工测试是总流程 ④ 步；提交、合并、推送、部署是 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成。AgentTeam 全程不触碰任何提交与远程写操作——出问题只在本地工作区可回滚。
 
-1. 提交 worktree 分支**到本地** `feature/<别名>`：commit message **只含标题一行、不加任何正文/描述**，标题取 `context.md` 的**需求标题**（`feat(R-<别名>): <标题>`；标题含中文时写消息文件用 `-F`，勿经 bash 中文参数）。禁止再追加改动摘要类正文——commit 信息里除标题行外不得有其他行。此提交仅为本地合并用，**不代表推送**。
-2. 合并回**本地固定分支**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master）→ `git merge feature/<别名>`。**只合并到本地，禁止 `git push`、`git push -u`、`git fetch`+`push` 等任何远程写操作。**
-3. **删除 worktree 前先摘掉它指向主仓的 `node_modules` 符号链接**（`unlink <worktree>/node_modules`，若为链接）——`git worktree remove --force` 会顺着该链接删进主仓 node_modules，把主仓依赖清空。再 `git worktree remove --force ../<仓库>-<别名>`、`git branch -d feature/<别名>`。worktree 依赖一律走 pnpm 全局 store，禁止手动符号链接指回主仓工作树内部。
-4. 清 `file-lock.md`。worktree 名即 `<仓库>-<别名>`。
+1. 建 worktree 时用 detached 基线（不建分支）：`git worktree add --detach ../<仓库>-<别名> <固定分支>`。coder 全程只改工作区文件，不 commit。
+2. 收尾把改动套回主仓固定分支工作区（不提交）：
+   - 若 worktree 有未跟踪新文件，先 `git -C <worktree> add -A -N`（intent-to-add，仅让 diff 能看到新文件，不产生提交）；
+   - `git -C <worktree> diff > <patch文件>`，然后 `git -C <主仓> apply <patch文件>`（默认只落工作区、不暂存）；
+   - 校验 `git -C <主仓> status`：只应出现本需求的改动（modified / untargeted untracked），**不得出现暂存区变化**，有杂项先停下来查。
+3. **删除 worktree 前先摘掉它指向主仓的 `node_modules` 符号链接**（`unlink <worktree>/node_modules`，若为链接）——`git worktree remove --force` 会顺着该链接删进主仓 node_modules，把主仓依赖清空。再 `git worktree remove --force ../<仓库>-<别名>`（detached 无分支可删，`git worktree prune` 兜底）。worktree 依赖一律走 pnpm 全局 store，禁止手动符号链接指回主仓工作树内部。
+4. 清 `file-lock.md` 中本需求条目。worktree 名即 `<仓库>-<别名>`。
 5. 删 init 时的计划临时文件（`rm -f xiaoqian-manager/data/temp/<启动时用的那个 md>`；任务ID流程可能已被 xiaoqian-manager 删过，rm -f 幂等；口头流程一定是主对话这里删）。
 
 ## 轨道约束
