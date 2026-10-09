@@ -84,7 +84,7 @@ try {
 }
 const wallMs = Date.now() - t0;
 
-const { stack, routes = [], modules = [], apiDomains = [], components = {}, warnings = [] } = map;
+const { stack, routes = [], modules = [], apiDomains = [], components = {}, warnings = [], stats = {} } = map;
 
 // ---------- 判定 ----------
 
@@ -201,4 +201,141 @@ function findHits(words) {
   // 同一 target 保留最长的命中词（越长越具体）
   const best = new Map();
   for (const h of hits) {
-    const key = `${h.kind}
+    const key = `${h.kind}:${h.target}`;
+    const prev = best.get(key);
+    if (!prev || h.keyword.length > prev.keyword.length) best.set(key, h);
+  }
+  return [...best.values()].sort((a, b) => a.kind.localeCompare(b.kind) || a.target.localeCompare(b.target));
+}
+
+// ---------- 组装关键词并求命中 ----------
+
+const kws = splitKeywords(`${reqTitle}\n${reqOneLiner}`);
+const keywordHits = kws.all.length ? findHits(kws.all).slice(0, MAX_HIT_ROWS) : [];
+
+// ---------- §6 组件反向引用：命中模块里被谁引用 ----------
+
+function reverseRefsFor(hitModules) {
+  const { importedBy } = components;
+  const rows = [];
+  for (const mod of hitModules) {
+    for (const comp of mod.components ?? []) {
+      const importers = importedBy?.[comp] ?? [];
+      rows.push({ component: comp, module: mod.name, importers });
+    }
+  }
+  // 被引用多的排前面：波及面大 = 改动风险高
+  rows.sort((a, b) => b.importers.length - a.importers.length || a.component.localeCompare(b.component));
+  return rows;
+}
+
+const hitModules = keywordHits.filter(h => h.kind === "module").map(h => modules.find(m => m.name === h.target)).filter(Boolean);
+const revRefs = reverseRefsFor(hitModules);
+
+// ---------- 渲染 ----------
+
+function mdTable(headers, rows) {
+  if (rows.length === 0) return "（空）";
+  const head = `| ${headers.join(" | ")} |`;
+  const sep = `| ${headers.map(() => "---").join(" | ")} |`;
+  const body = rows.map(r => `| ${r.map(c => String(c ?? "").replace(/\|/g, "\\|") || " ").join(" | ")} |`);
+  return [head, sep, ...body].join("\n");
+}
+
+const L = [];
+L.push(`# ${alias} - 事实底稿（recon）`);
+L.push("");
+L.push(`> 由 \`node scripts/recon.mjs ${alias}\` 覆盖生成（确定性产出，无 LLM 判断）。`);
+L.push(`> 数据源：xiaoyou-code-indexer scan 主仓 \`gitlab/${repoName}\`。**空白 = 索引器无产出，不等于该仓没有这段代码。**`);
+L.push("> 完整接口清单见同目录 `recon-endpoints.txt`（一行一条 `文件<TAB>METHOD<TAB>URL<TAB>fn`），本文件只放样例。");
+L.push("");
+L.push("## §0 探活与可索引判定");
+L.push("");
+L.push(`- 仓名：${repoName}`);
+L.push(`- stack：kind=${stack.kind} vue=${stack.vueVersion ?? "?"} builder=${stack.builder} qiankunChild=${stack.isQiankunChild}`);
+L.push(`- 目录：src=${stack.srcDir ?? "?"} router=${stack.routerFile ?? "?"} page=${stack.pageDir ?? "?"} service=${stack.serviceDir ?? "?"}`);
+L.push(`- 判定：**${verdict}**`);
+L.push(`- 扫描：${wallMs}ms，files=${stats.filesScanned} ignored=${stats.filesIgnored} sfc=${components.stats?.sfcCount ?? "?"}`);
+L.push("");
+L.push("## §1 路由表");
+L.push("");
+L.push(mdTable(["path", "label", "componentFile", "sider"], routes.map(r => [r.path, r.label, r.componentFile, r.isSiderMenu])));
+L.push("");
+L.push("## §2 业务模块");
+L.push("");
+L.push(
+  mdTable(
+    ["模块", "label", "dir", "组件数", "api 引用"],
+    modules.map(m => [m.name, m.label, m.dir, m.components?.length ?? 0, (m.api ?? []).map(a => a.domain).join(",")]),
+  ),
+);
+L.push("");
+L.push("## §3 接口清单（按域）");
+L.push("");
+if (endpointTotal === 0) {
+  L.push(`解析失败原因：${endpointFailReason()}`);
+  const fb = fallbackScan();
+  L.push("");
+  L.push(`兜底扫描目录：${fb.dirs.length ? fb.dirs.join("、") : "（无）"}，命中文件 ${fb.rows.length} 个（URL 字符串粗提，样例 ${Math.min(SAMPLE_ROWS, fb.rows.length)} 条）：`);
+  L.push("");
+  for (const r of fb.rows.slice(0, SAMPLE_ROWS)) L.push(`- \`${r.file}\`：${r.urls.slice(0, 5).join("、")}${r.urls.length > 5 ? " …" : ""}`);
+} else {
+  for (const d of apiDomains) {
+    const eps = d.endpoints ?? [];
+    L.push(`### ${d.name}（${d.dir}，${eps.length} 端点${(d.usedByModules ?? []).length >= 3 ? "，共享基础域" : ""}）`);
+    L.push("");
+    for (const e of eps.slice(0, MAX_ENDPOINTS_PER_DOMAIN)) L.push(`- \`${e.method.toUpperCase()}\` \`${e.url}\` — ${e.fn}() @ ${e.file}:${e.line}`);
+    if (eps.length > MAX_ENDPOINTS_PER_DOMAIN) L.push(`- … 其余 ${eps.length - MAX_ENDPOINTS_PER_DOMAIN} 条见 recon-endpoints.txt`);
+    if ((d.nonEndpointFns ?? []).length) L.push(`- 非直调函数 ${d.nonEndpointFns.length} 个（可能二次封装）：${d.nonEndpointFns.slice(0, 10).join("、")}${d.nonEndpointFns.length > 10 ? " …" : ""}`);
+    L.push("");
+  }
+}
+L.push("## §4 静态告警");
+L.push("");
+L.push(warnings.length ? warnings.map(w => `- **${w.kind}**：${w.message}`).join("\n") : "（无）");
+L.push("");
+L.push("## §5 关键词候选命中（启发式，非结论）");
+L.push("");
+L.push(`关键词：${kws.all.slice(0, 30).join("、")}${kws.all.length > 30 ? " …" : ""}`);
+L.push("");
+L.push(
+  mdTable(
+    ["类型", "目标", "命中字段", "关键词"],
+    keywordHits.map(h => [h.kind, h.target, h.field, h.keyword]),
+  ),
+);
+L.push("");
+L.push("## §6 组件反向引用（改动波及面）");
+L.push("");
+if (revRefs.length === 0) {
+  L.push("（命中模块为空或其组件无反向引用）");
+} else {
+  L.push(
+    mdTable(
+      ["组件", "所属模块", "被引用数", "引用方（前几名）"],
+      revRefs.slice(0, MAX_IMPORTED_TOP).map(r => [
+        r.component,
+        r.module,
+        r.importers.length,
+        r.importers.slice(0, 5).join("、") || "（无）",
+      ]),
+    ),
+  );
+  if (revRefs.length > MAX_IMPORTED_TOP) L.push(`\n（其余 ${revRefs.length - MAX_IMPORTED_TOP} 个组件反向引用从略）`);
+}
+L.push("");
+
+// ---------- 落盘 ----------
+
+const outMd = L.join("\n");
+fs.writeFileSync(path.join(reqDir, "recon.md"), outMd);
+
+const epLines = [];
+for (const d of apiDomains) {
+  for (const e of d.endpoints ?? []) epLines.push(`${e.file}\t${e.method}\t${e.url}\t${e.fn}`);
+}
+fs.writeFileSync(path.join(reqDir, "recon-endpoints.txt"), epLines.join("\n") + (epLines.length ? "\n" : ""));
+
+process.stdout.write(
+  `recon: ${alias} -> ${path.relative(ROOT, path.join(reqDir, "recon.md"))} （${verdict}；routes=${routes.length} modules=${modules.length} endpoints=${endpointTotal} hits=${keywordHits.length}）\n`,
+);

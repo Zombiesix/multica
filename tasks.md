@@ -10,3 +10,4 @@
 | R-371467 | iHO-护理管理系统 | 待处理 | full | iho-nurse-manager-ui-R-371467 | 已完成 | /pipeline R-371467 |
 | R-oral-10091133 | iHO-不良事件上报 | 待处理 | light | iho-aers-web-R-oral-10091133 | 已完成 | /pipeline R-oral-10091133 |
 | R-154886 | iHO-护理系统 | 待处理 | light | iho-nurse-manager-ui-R-154886 | 已完成 | /pipeline R-154886 |
+| R-034684 | iHO-护理管理系统 | 待处理 | full | iho-nurse-manager-ui-R-034684 | 待验收 | /pipeline R-034684 |
