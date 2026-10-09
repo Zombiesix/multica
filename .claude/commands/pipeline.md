@@ -4,8 +4,11 @@
 
 ## 启动 / 恢复
 
-- 启动：`/pipeline A-001`
-- 恢复：`/pipeline resume A-001`
+- 启动（任务ID）：`/pipeline A-001` —— 与 xiaoqian-manager「开始」按钮同款；计划文件是 xiaoqian-manager 生成的临时 md
+- 启动（口头需求）：`/pipeline <一句需求描述>` —— 无任务ID、无 md 文件，同样只跑 ②③（规划+编码+审查+修复）；①④⑤⑥ 天然不存在，全手动
+- 恢复：`/pipeline resume A-001`（任务ID或别名均可）
+
+**参数判别规则**：参数能对应已接入的需求（`docs/requirements/R-<参数后6位>/` 存在，或 `xiaoqian-manager/data/temp/<参数>.md` 存在）→ 走任务ID流程；否则一律视为口头描述，走下面的口头流程。
 
 主对话动作序：
 
@@ -18,7 +21,12 @@
 
 ### init → 用 pipeline-feed skill 喂食（一句话接入）
 
-会话开始时，若该需求尚未接入流水线（`state.json` 不存在 / 无 `docs/requirements/<别名>/`），调用 **pipeline-feed** skill，参数 = PM 计划文件路径（如 `get-plan/plans/<任务ID>.md`）。由 skill 完成脚手架：
+会话开始时，若该需求尚未接入流水线（`state.json` 不存在 / 无 `docs/requirements/<别名>/`），调用 **pipeline-feed** skill，参数 = PM 计划文件路径。**计划文件一律是临时文件**，放 `xiaoqian-manager/data/temp/`，正常收尾后删除：
+
+- 任务ID流程：文件由 xiaoqian-manager「开始」按钮预生成在 `xiaoqian-manager/data/temp/<任务ID>.md`（xiaoqian 侧 exit 0 时已自行删除）；人工 `/pipeline <任务ID>` 启动而没有该文件时，主对话从 xiaoqian-manager 的 `data/tasks.json` 找到对应任务、按同格式补写该临时文件，再继续。
+- **口头流程**：参数原文就是需求。主对话先落盘 `xiaoqian-manager/data/temp/R-oral-<MMDDHHmm>.md`：首行 `# <从描述提炼的标题，≤20字>`，`## 问题描述` 放描述原文；别名 = 文件名（`R-oral-<同一时间戳>`），由 pipeline-feed 从文件名取。后续阶段与任务ID流程完全一致。
+
+由 skill 完成脚手架：
 
 - 抽字段 → 定别名 `R-<任务ID后6位>`
 - 查 `project-map.md` 定 worktree（**基准分支：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`**，非 master）
@@ -149,6 +157,7 @@ python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(
 2. 合并回**本地固定分支**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master）→ `git merge feature/<别名>`。**只合并到本地，禁止 `git push`、`git push -u`、`git fetch`+`push` 等任何远程写操作。**
 3. **删除 worktree 前先摘掉它指向主仓的 `node_modules` 符号链接**（`unlink <worktree>/node_modules`，若为链接）——`git worktree remove --force` 会顺着该链接删进主仓 node_modules，把主仓依赖清空。再 `git worktree remove --force ../<仓库>-<别名>`、`git branch -d feature/<别名>`。worktree 依赖一律走 pnpm 全局 store，禁止手动符号链接指回主仓工作树内部。
 4. 清 `file-lock.md`。worktree 名即 `<仓库>-<别名>`。
+5. 删 init 时的计划临时文件（`rm -f xiaoqian-manager/data/temp/<启动时用的那个 md>`；任务ID流程可能已被 xiaoqian-manager 删过，rm -f 幂等；口头流程一定是主对话这里删）。
 
 ## 轨道约束
 

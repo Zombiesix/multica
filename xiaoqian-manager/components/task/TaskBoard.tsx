@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Inbox } from "lucide-react";
+import { toast } from "sonner";
 import { Accordion } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +50,39 @@ export default function TaskBoard({
       return true;
     });
   }, [initialTasks, query, moduleFilter]);
+
+  const hasActivePipeline = initialTasks.some((t) =>
+    t.stages.some(
+      (s) =>
+        (s.key === "planer" || s.key === "coder") && s.status === "active"
+    )
+  );
+
+  // 流水线在独立终端窗口里跑，结束后由服务端自动置 done —— 轮询刷新让页面看到结果
+  useEffect(() => {
+    if (!hasActivePipeline) return;
+    const timer = setInterval(() => router.refresh(), 15000);
+    return () => clearInterval(timer);
+  }, [hasActivePipeline, router]);
+
+  const startPipeline = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/pipeline`, {
+        method: "POST",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!res.ok) {
+        toast.error(json.error || "启动流水线失败");
+        return;
+      }
+      toast.success("流水线已启动，请在弹出的终端窗口里回车开始");
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "启动流水线失败");
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -109,6 +143,7 @@ export default function TaskBoard({
               key={t.id}
               task={t}
               onOpenStage={(stage) => setSheet({ taskId: t.id, stage })}
+              onStartPipeline={startPipeline}
             />
           ))}
         </Accordion>

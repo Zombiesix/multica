@@ -1,8 +1,16 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { CheckCircle2, ClipboardList, Code2, FlaskConical, Rocket } from "lucide-react";
+import {
+  CheckCircle2,
+  ClipboardList,
+  Code2,
+  FlaskConical,
+  Loader2,
+  Play,
+  Rocket,
+} from "lucide-react";
 import type { Stage } from "@/lib/domain/schema";
 import { stageVisual } from "@/lib/domain/stage-visual";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +19,7 @@ import { fmtDateTime } from "@/lib/ui/format";
 export type StageNodeData = {
   stage: Stage;
   onOpen: (stage: Stage) => void;
+  onStartPipeline?: () => void;
 };
 export type StageNodeType = Node<StageNodeData, "stage">;
 
@@ -22,9 +31,12 @@ const ICONS = {
 } as const;
 
 function StageNode({ data }: NodeProps<StageNodeType>) {
-  const { stage, onOpen } = data;
+  const { stage, onOpen, onStartPipeline } = data;
+  const [starting, setStarting] = useState(false);
   const v = stageVisual(stage.status);
   const Icon = ICONS[stage.key];
+  const canStart =
+    stage.key === "planer" && stage.status === "pending" && !!onStartPipeline;
 
   const subtitle =
     stage.status === "done" && stage.finishedAt
@@ -62,6 +74,30 @@ function StageNode({ data }: NodeProps<StageNodeType>) {
           </div>
         </div>
       </div>
+      {canStart && (
+        <button
+          type="button"
+          title="开始流水线：弹出新窗口跑 Claude Code（计划+写代码）"
+          disabled={starting}
+          className="absolute bottom-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-opacity hover:opacity-85 disabled:opacity-60"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!onStartPipeline || starting) return;
+            setStarting(true);
+            try {
+              onStartPipeline();
+            } finally {
+              setStarting(false);
+            }
+          }}
+        >
+          {starting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
+        </button>
+      )}
       <Handle
         type="target"
         position={Position.Left}

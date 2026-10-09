@@ -21,9 +21,11 @@ const NODE_W = 260;
 export default function TaskFlow({
   stages,
   onOpen,
+  onStartPipeline,
 }: {
   stages: Stage[];
   onOpen: (s: Stage) => void;
+  onStartPipeline?: () => void;
 }) {
   const nodes = useMemo<Node[]>(
     () =>
@@ -31,11 +33,11 @@ export default function TaskFlow({
         id: s.key,
         type: "stage",
         position: { x: i * NODE_W, y: 0 },
-        data: { stage: s, onOpen },
+        data: { stage: s, onOpen, onStartPipeline },
         draggable: false,
         connectable: false,
       })),
-    [stages, onOpen]
+    [stages, onOpen, onStartPipeline]
   );
 
   const edges = useMemo<Edge[]>(

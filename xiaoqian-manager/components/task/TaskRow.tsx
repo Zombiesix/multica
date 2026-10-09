@@ -33,9 +33,11 @@ function StatusBadge({ status }: { status: string }) {
 export default function TaskRow({
   task,
   onOpenStage,
+  onStartPipeline,
 }: {
   task: Task;
   onOpenStage: (stage: Stage) => void;
+  onStartPipeline: (taskId: string) => void;
 }) {
   const doneCount = task.stages.filter((s) => s.status === "done").length;
 
@@ -70,11 +72,15 @@ export default function TaskRow({
         <div className="mt-3 rounded-lg border bg-muted/20 p-2">
           <div className="overflow-x-auto">
             <div className="min-w-[1040px]">
-              <TaskFlow stages={task.stages} onOpen={onOpenStage} />
+              <TaskFlow
+                stages={task.stages}
+                onOpen={onOpenStage}
+                onStartPipeline={() => onStartPipeline(task.id)}
+              />
             </div>
           </div>
           <p className="mt-1 px-2 text-xs text-muted-foreground">
-            点击节点可更新阶段状态
+            点击节点可更新阶段状态；计划节点点 ▶ 可一键开始流水线（计划+写代码）
           </p>
         </div>
         <div className="mt-3">
