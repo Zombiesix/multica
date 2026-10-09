@@ -42,9 +42,11 @@ export default function StageSheet({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  // 部署节点只有「已完成」一种终态：默认即为 done，且不允许改。
+  const isDeploy = sheet?.stage.key === "deploy";
   // 表单初始值来自挂载时的 props；父组件用 key={taskId:stageKey} 触发重挂载来重置。
   const [status, setStatus] = useState<StageStatus>(
-    sheet?.stage.status ?? "pending",
+    isDeploy ? "done" : (sheet?.stage.status ?? "pending"),
   );
   const [owner, setOwner] = useState(sheet?.stage.owner ?? "");
   const [note, setNote] = useState(sheet?.stage.note ?? "");
@@ -54,8 +56,7 @@ export default function StageSheet({
 
   if (!sheet) return null;
   const { stage, taskId } = sheet;
-  const isDeploy = stage.key === "deploy";
-  const gitIncomplete = isDeploy && status === "done" && (!repo || !targetBranch);
+  const gitIncomplete = isDeploy && (!repo || !targetBranch);
 
   const save = async () => {
     setSaving(true);
@@ -103,6 +104,7 @@ export default function StageSheet({
             <Select
               value={status}
               onValueChange={(val) => setStatus(val as StageStatus)}
+              disabled={isDeploy}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -115,6 +117,11 @@ export default function StageSheet({
                 ))}
               </SelectContent>
             </Select>
+            {isDeploy && (
+              <p className="text-xs text-muted-foreground">
+                部署节点固定为「已完成」，不可修改。
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="stage-owner">负责人</Label>

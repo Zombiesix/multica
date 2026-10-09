@@ -4,7 +4,6 @@ import { STAGE_KEYS, StageStatus } from "@/lib/domain/schema";
 import { readTasks, updateTask } from "@/lib/server/store";
 import { pushDevOperation } from "@/lib/server/teamwork/client";
 import { buildDeployMessage, runDeployGit } from "@/lib/server/git/deploy";
-import { retain } from "@/lib/server/hindsight/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +56,14 @@ export async function PATCH(
     }
     // 部署节点完成：先把该任务的代码提交/推送/cherry-pick 到目标分支；协作平台任务点完成
     if (stageKey === "deploy" && status === "done") {
+      // 已部署过就拒绝重复提交，避免重跑 commit/push/cherry-pick
+      const deployStage = existing.stages.find((s) => s.key === "deploy");
+      if (deployStage?.status === "done") {
+        return NextResponse.json(
+          { error: "该任务已部署完成，不能重复提交" },
+          { status: 409 }
+        );
+      }
       // 任一步失败就中断 —— 不写协作平台，也不落本地 tasks.json
       await runDeployGit({
         repo: repo as string,
@@ -65,12 +72,6 @@ export async function PATCH(
       });
       // 先写协作平台；失败（含登录失效）则中断，不落本地 tasks.json
       await pushDevOperation(id);
-      // ⑤部署成功 → 记一条已部署状态进记忆（软降级：Hindsight 没起就静默跳过，不阻塞保存）
-      await retain(
-        "multica-project",
-        `需求 ${id}（${existing.title}）已部署到 ${targetBranch}（协作平台操作已同步）`,
-        `R-${id.slice(-6)} deploy`
-      );
     }
     const now = new Date().toISOString();
     const task = await updateTask(id, (t) => ({
