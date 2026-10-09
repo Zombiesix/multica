@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
+import { Check, Copy } from "lucide-react";
 import {
   AccordionContent,
   AccordionItem,
@@ -40,6 +42,28 @@ export default function TaskRow({
   onStartPipeline: (taskId: string) => void;
 }) {
   const doneCount = task.stages.filter((s) => s.status === "done").length;
+  const [copied, setCopied] = useState(false);
+
+  const copyTitle = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(task.title);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = task.title;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable
+    }
+  };
 
   return (
     <AccordionItem
@@ -52,6 +76,20 @@ export default function TaskRow({
             <div className="flex items-center gap-2">
               <span className="truncate font-medium">{task.title}</span>
               <StatusBadge status={task.twStatus} />
+              <span
+                title="复制标题"
+                className="shrink-0 cursor-pointer text-muted-foreground/70 hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void copyTitle();
+                }}
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-green-600" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </span>
             </div>
             <div className="mt-0.5 truncate text-xs text-muted-foreground">
               {task.module}
