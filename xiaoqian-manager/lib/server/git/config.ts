@@ -27,22 +27,22 @@ const DEFAULT_REPOS = [
 ];
 const DEFAULT_BRANCHES = ["dev", "dev-zjb", "dev-iho-feat"];
 const DEFAULT_JENKINS: Record<string, string> = {
-  "iho-aers-web": "http://192.168.1.120:9990/jenkins/job/aers-web/build",
-  "iho-cssd-ui": "http://192.168.1.120:9990/jenkins/job/iho-cssd-web/build",
+  "iho-aers-web": "http://192.168.1.120:9990/jenkins/job/aers-web/build?delay=0sec",
+  "iho-cssd-ui": "http://192.168.1.120:9990/jenkins/job/iho-cssd-web/build?delay=0sec",
   "iho-cssd-ui-mobile":
-    "http://192.168.1.120:9990/jenkins/job/iho-cssdH5消毒供应移动端/build",
-  "iho-ehr-ui": "http://192.168.1.120:9990/jenkins/job/iho-ehr-web/build",
-  "iho-haimis-ui": "http://192.168.1.120:9990/jenkins/job/iho-haimis-web/build",
-  "iho-icis-ui": "http://192.168.1.120:9990/jenkins/job/iho-icis-web/build",
+    "http://192.168.1.120:9990/jenkins/job/iho-cssdH5消毒供应移动端/build?delay=0sec",
+  "iho-ehr-ui": "http://192.168.1.120:9990/jenkins/job/iho-ehr-web/build?delay=0sec",
+  "iho-haimis-ui": "http://192.168.1.120:9990/jenkins/job/iho-haimis-web/build?delay=0sec",
+  "iho-icis-ui": "http://192.168.1.120:9990/jenkins/job/iho-icis-web/build?delay=0sec",
   "iho-medical-record-ui":
-    "http://192.168.1.120:9990/jenkins/job/iho-mrms-web/build",
-  "iho-medical-ui": "http://192.168.1.120:9990/jenkins/job/iho-treat-web/build",
-  "iho-nbs-web": "http://192.168.1.120:9990/jenkins/job/iho-nbs-web/build",
+    "http://192.168.1.120:9990/jenkins/job/iho-mrms-web/build?delay=0sec",
+  "iho-medical-ui": "http://192.168.1.120:9990/jenkins/job/iho-treat-web/build?delay=0sec",
+  "iho-nbs-web": "http://192.168.1.120:9990/jenkins/job/iho-nbs-web/build?delay=0sec",
   "iho-nurse-manager-ui":
-    "http://192.168.1.120:9990/jenkins/job/iho-hosnurse-web/build",
-  "iho-pathology-ui": "http://192.168.1.120:9990/jenkins/job/pis_web/build",
+    "http://192.168.1.120:9990/jenkins/job/iho-nursing-web/build?delay=0sec",
+  "iho-pathology-ui": "http://192.168.1.120:9990/jenkins/job/pis_web/build?delay=0sec",
   "reuseapp-blood-bank-web":
-    "http://192.168.1.120:9990/jenkins/job/bloodbank-web/build",
+    "http://192.168.1.120:9990/jenkins/job/bloodbank-web/build?delay=0sec",
 };
 
 let cached: GitConfig | null = null;
