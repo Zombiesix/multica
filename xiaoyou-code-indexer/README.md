@@ -11,20 +11,20 @@ node bin/cli.mjs <cmd> <repo> [...args]
 # 或全局链接后: xiaoyou-index <cmd> <repo>
 ```
 
-| 命令                                     | 说明                                                                 |
-| ---------------------------------------- | -------------------------------------------------------------------- |
-| `scan <repo>`                            | 完整 ProjectMap JSON（体积大，谨慎直接喂模型）                       |
-| `map <repo>`                             | 项目全貌摘要（路由/模块/API 域/store/事件/权限/存储/告警）           |
-| `trace <repo> <route\|module>`           | 追一条业务链路：路由 → 组件树 → API → store/事件/权限/存储           |
-| `trace-event <repo> <component> <event>` | 谁 emit → 谁接 → handler 里干了什么（子→父反向通道）                 |
-| `trace-state <repo> <store>[.<field>]`   | 谁读、谁写某个 store 字段（不传字段则列全部）                        |
-| `channels <repo> [--kind K]`             | 状态与事件通道总览。K = store\|event\|permission\|guard\|storage\|ws |
+| 命令                                     | 说明                                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| `scan <repo>`                            | 完整 ProjectMap JSON（体积大，谨慎直接喂模型）                          |
+| `map <repo>`                             | 项目全貌摘要（路由/模块/API 域/store/事件/权限/存储/告警）              |
+| `trace <repo> <route\|module>`           | 追一条业务链路：路由 → 组件树 → API → store/事件/权限/存储              |
+| `trace-event <repo> <component> <event>` | 谁 emit → 谁接 → handler 里干了什么（子→父反向通道）                    |
+| `trace-state <repo> <store>[.<field>]`   | 谁读、谁写某个 store 字段（不传字段则列全部）                           |
+| `channels <repo> [--kind K]`             | 状态与事件通道总览。K = store\|event\|permission\|guard\|storage\|ws    |
 | `modules <repo> [<module>]`              | 模块间关系：模块→模块 / →共享层 / 共享 store / 共用 API 域 / 跨模块事件 |
-| `warnings <repo> [--kind K] [--limit N]` | 静态告警列表                                                         |
-| `search <repo> <keyword>`                | 按关键词查路由/模块/端点                                             |
-| `stats <repo>`                           | 扫描规模与耗时（探活）                                               |
-| `rescan <repo>`                          | 清缓存重扫                                                           |
-| `serve <repo>`                           | 启动 stdio MCP server                                                |
+| `warnings <repo> [--kind K] [--limit N]` | 静态告警列表                                                            |
+| `search <repo> <keyword>`                | 按关键词查路由/模块/端点                                                |
+| `stats <repo>`                           | 扫描规模与耗时（探活）                                                  |
+| `rescan <repo>`                          | 清缓存重扫                                                              |
+| `serve <repo>`                           | 启动 stdio MCP server                                                   |
 
 全部输出 JSON；加 `--compact` 输出紧凑单行。
 
