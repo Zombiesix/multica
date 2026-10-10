@@ -73,16 +73,45 @@ export function updateTask(
 export interface MergeResult {
   created: number;
   updated: number;
+  removed: number;
 }
 
-// 合并同步结果：已存在的任务保留本地 stages（用户手动改过的进度不覆盖），
-// 其余平台侧字段刷新；新任务整体插入。
-export function mergeTasks(incoming: Task[]): Promise<MergeResult> {
+// 本次同步的筛选范围：范围内但远程未返回的本地任务视为平台侧已变化，予以删除
+export interface MergeScope {
+  user: string;
+  statuses: string[]; // 平台状态码，如 ["1","2"]
+  module: string;
+}
+
+const STATUS_LABELS: Record<string, string> = { "1": "待处理", "2": "处理中" };
+
+// 本地任务是否落在同步范围内（与 fetchList 的 qqConObj 筛选口径一致）
+function inScope(t: Task, scope: MergeScope): boolean {
+  if (scope.module && t.module !== scope.module) return false;
+  // 平台侧 username 用 CL（包含）匹配，这里保持同样口径
+  if (scope.user && !t.assignee.includes(scope.user)) return false;
+  if (scope.statuses.length) {
+    const labels = scope.statuses.map((c) => STATUS_LABELS[c] || c);
+    if (!labels.includes(t.twStatus)) return false;
+  }
+  return true;
+}
+
+// 合并同步结果：以远程数据为准——已存在的任务保留本地 stages（用户手动改过的
+// 进度不覆盖），其余平台侧字段刷新；新任务整体插入；范围内远程未返回的任务删除。
+// keepIds：平台侧确认仍存在但本次拉详情失败的 id，跳过删除以免误伤。
+export function mergeTasks(
+  incoming: Task[],
+  opts?: { scope?: MergeScope; keepIds?: string[] }
+): Promise<MergeResult> {
   return serialize(() => {
     const { tasks } = readTasks();
+    const incomingIds = new Set(incoming.map((t) => t.id));
+    const keepIds = new Set(opts?.keepIds ?? []);
     const byId = new Map(tasks.map((t) => [t.id, t]));
     let created = 0;
     let updated = 0;
+    let removed = 0;
     for (const inc of incoming) {
       const existing = byId.get(inc.id);
       if (existing) {
@@ -93,7 +122,16 @@ export function mergeTasks(incoming: Task[]): Promise<MergeResult> {
         created++;
       }
     }
+    if (opts?.scope) {
+      for (const t of tasks) {
+        if (incomingIds.has(t.id) || keepIds.has(t.id)) continue;
+        if (inScope(t, opts.scope)) {
+          byId.delete(t.id);
+          removed++;
+        }
+      }
+    }
     writePayload([...byId.values()]);
-    return { created, updated };
+    return { created, updated, removed };
   });
 }

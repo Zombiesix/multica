@@ -36,6 +36,8 @@ export async function POST(req: Request) {
     const tasks: Task[] = [];
     let failed = 0;
     const errors: string[] = [];
+    // 平台侧确认仍存在、但拉详情失败的 id，合并时跳过删除
+    const failedIds: string[] = [];
     for (const row of rows) {
       const id = String(row.id ?? "").trim();
       try {
@@ -48,14 +50,19 @@ export async function POST(req: Request) {
       } catch (e) {
         failed++;
         errors.push(`${id}: ${e instanceof Error ? e.message : "unknown"}`);
+        if (id) failedIds.push(id);
       }
     }
 
-    const merged = await mergeTasks(tasks);
+    const merged = await mergeTasks(tasks, {
+      scope: { user, statuses, module: moduleName },
+      keepIds: failedIds,
+    });
     return NextResponse.json({
       synced: tasks.length,
       created: merged.created,
       updated: merged.updated,
+      removed: merged.removed,
       failed,
       errors,
     });

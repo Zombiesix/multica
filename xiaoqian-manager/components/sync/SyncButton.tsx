@@ -34,6 +34,7 @@ interface SyncResult {
   synced: number;
   created: number;
   updated: number;
+  removed: number;
   failed: number;
   errors: string[];
 }
@@ -62,11 +63,13 @@ export default function SyncButton() {
       if (!res.ok) throw new Error(json.error || "同步失败");
       if (json.failed > 0) {
         toast.warning(
-          `同步完成：新增 ${json.created}，更新 ${json.updated}，失败 ${json.failed}`,
+          `同步完成：新增 ${json.created}，更新 ${json.updated}，删除 ${json.removed}，失败 ${json.failed}`,
           { description: json.errors.slice(0, 3).join("\n") }
         );
       } else {
-        toast.success(`同步完成：新增 ${json.created}，更新 ${json.updated}`);
+        toast.success(
+          `同步完成：新增 ${json.created}，更新 ${json.updated}，删除 ${json.removed}`
+        );
       }
       setOpen(false);
       router.refresh();
@@ -89,7 +92,7 @@ export default function SyncButton() {
         <DialogHeader>
           <DialogTitle>从协作平台同步任务</DialogTitle>
           <DialogDescription>
-            按以下条件拉取任务列表，已有任务的阶段进度不会被覆盖。
+            同步以远程数据为准：范围内远程已不存在的本地任务会被删除，已有任务的阶段进度不会被覆盖。
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
