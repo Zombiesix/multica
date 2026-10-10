@@ -149,6 +149,13 @@ function fallbackScan() {
   return { dirs: dirs.map(d => path.relative(repoRoot, d).replace(/\\/g, "/")), rows };
 }
 
+/** 索引器 UnresolvedReason 的中文说法。no-client-usage 是噪音，其余两类才值得看 */
+const UNRESOLVED_REASON_LABEL = {
+  "unsupported-call-form": "调用形态不支持（解构直调 / 二次封装 / 对象参数）",
+  "unresolved-url": "URL 非字面量（变量 / 常量 / 拼接）",
+  "no-client-usage": "纯工具函数（非提取失败）",
+};
+
 function endpointFailReason() {
   if (!stack.serviceDir) {
     const guessed = guessServiceDirs();
@@ -157,11 +164,26 @@ function endpointFailReason() {
       : "索引器的 serviceDir 探测为 null，且按 src/service|services|api|apis、src/common/api 兜底也没找到接口目录";
   }
   if (apiDomains.length === 0) return `探测到 serviceDir=${stack.serviceDir}，但未解析出任何 api 域`;
+  // 原因由索引器带上（unresolvedFns[].reason），这里只做翻译，不再靠猜
+  const all = apiDomains.flatMap(d => d.unresolvedFns ?? []);
+  if (all.length) {
+    const byReason = {};
+    for (const u of all) byReason[u.reason] = (byReason[u.reason] ?? 0) + 1;
+    const parts = [];
+    for (const [reason, label] of Object.entries(UNRESOLVED_REASON_LABEL)) {
+      if (byReason[reason]) parts.push(`${label} ${byReason[reason]} 个`);
+    }
+    for (const [reason, n] of Object.entries(byReason)) {
+      if (!UNRESOLVED_REASON_LABEL[reason]) parts.push(`${reason} ${n} 个`);
+    }
+    return `api 域存在但端点为 0。未解析函数按原因分类：${parts.join("；")}`;
+  }
+  // 兼容旧版索引器（只有 nonEndpointFns 裸名字数组）
   const nonEmpty = apiDomains.filter(d => (d.nonEndpointFns?.length ?? 0) > 0);
   if (nonEmpty.length) {
-    return `api 域存在但端点为 0：调用形态不是 client.get('url') 直调（可能是对象参数 request({url}) 或二次封装），落在 nonEndpointFns 里，共 ${nonEmpty.length} 个域有此类函数`;
+    return `api 域存在但端点为 0，落在 nonEndpointFns 里，共 ${nonEmpty.length} 个域有此类函数（索引器版本较旧，未带原因分类）`;
   }
-  return "api 域存在但端点为 0，且无 nonEndpointFns 记录，原因需人工核查";
+  return "api 域存在但端点为 0，且无未解析记录，原因需人工核查";
 }
 
 // ---------- §5 关键词候选命中 ----------
@@ -286,7 +308,21 @@ if (endpointTotal === 0) {
     L.push("");
     for (const e of eps.slice(0, MAX_ENDPOINTS_PER_DOMAIN)) L.push(`- \`${e.method.toUpperCase()}\` \`${e.url}\` — ${e.fn}() @ ${e.file}:${e.line}`);
     if (eps.length > MAX_ENDPOINTS_PER_DOMAIN) L.push(`- … 其余 ${eps.length - MAX_ENDPOINTS_PER_DOMAIN} 条见 recon-endpoints.txt`);
-    if ((d.nonEndpointFns ?? []).length) L.push(`- 非直调函数 ${d.nonEndpointFns.length} 个（可能二次封装）：${d.nonEndpointFns.slice(0, 10).join("、")}${d.nonEndpointFns.length > 10 ? " …" : ""}`);
+    const uf = d.unresolvedFns ?? [];
+    if (uf.length) {
+      const byReason = {};
+      for (const u of uf) (byReason[u.reason] ??= []).push(u.fn);
+      const segs = Object.entries(byReason).map(([reason, fns]) => {
+        const label = UNRESOLVED_REASON_LABEL[reason] ?? reason;
+        // 纯工具函数只报数，不铺名字 —— 那是噪音
+        if (reason === "no-client-usage") return `${label} ${fns.length} 个`;
+        const shown = fns.slice(0, 8).join("、");
+        return `${label} ${fns.length} 个：${shown}${fns.length > 8 ? " …" : ""}`;
+      });
+      L.push(`- 未解析函数 ${uf.length} 个 — ${segs.join("；")}`);
+    } else if ((d.nonEndpointFns ?? []).length) {
+      L.push(`- 非直调函数 ${d.nonEndpointFns.length} 个（可能二次封装）：${d.nonEndpointFns.slice(0, 10).join("、")}${d.nonEndpointFns.length > 10 ? " …" : ""}`);
+    }
     L.push("");
   }
 }
