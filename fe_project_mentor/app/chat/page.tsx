@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ProjectMap } from "xiaoyou-code-indexer/types";
+import type { ProjectMap } from "code-indexer/types";
 import type { KnowledgeEntry } from "@/lib/knowledge/schema";
 import MentorPanel from "@/lib/ui/MentorPanel";
 import TeachPanel from "@/lib/ui/TeachPanel";
@@ -63,18 +63,19 @@ export default function ChatPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path }),
     })
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (!d?.repo?.path) throw new Error(d?.error ?? "扫描失败");
         setMap(d as ProjectMap);
         setRepoPath(d.repo.path);
         void loadEntries(d.repo.path);
       })
-      .catch(err => setError(err.message))
+      .catch((err) => setError(err.message))
       .finally(() => setReady(true));
   }, [loadEntries]);
 
-  const quickTargets = map?.routes.map(r => ({ path: r.path, label: r.label })) ?? [];
+  const quickTargets =
+    map?.routes.map((r) => ({ path: r.path, label: r.label })) ?? [];
 
   return (
     <main className="wrap">

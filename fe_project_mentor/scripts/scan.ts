@@ -1,8 +1,8 @@
 import path from "node:path";
-import { scanRepo } from "xiaoyou-code-indexer";
-import { resolveModuleEndpoints } from "xiaoyou-code-indexer/endpoint-types";
-import type { ComponentNode } from "xiaoyou-code-indexer/types";
-import { viaLabel } from "xiaoyou-code-indexer/via-label";
+import { scanRepo } from "code-indexer";
+import { resolveModuleEndpoints } from "code-indexer/endpoint-types";
+import type { ComponentNode } from "code-indexer/types";
+import { viaLabel } from "code-indexer/via-label";
 
 const MAX_MODULE_ENDPOINTS = 8;
 

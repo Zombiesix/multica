@@ -1,4 +1,4 @@
-# xiaoyou-code-indexer
+# code-indexer
 
 Vue3 仓库静态索引器：扫描目标仓生成 ProjectMap（路由表 / 业务模块 / API 域 / 组件图 / 静态告警），供 Claude Code 或其它 Agent 以 MCP 工具或 CLI 的方式消费。
 
@@ -66,7 +66,7 @@ node bin/cli.mjs <cmd> <repo> [...args]
     "xiaoyou-indexer": {
       "command": "node",
       "args": [
-        "D:/multica/xiaoyou-code-indexer/bin/cli.mjs",
+        "D:/multica/code-indexer/bin/cli.mjs",
         "serve",
         "D:/multica/gitlab/<vue3-repo>"
       ]
@@ -94,9 +94,9 @@ node bin/cli.mjs <cmd> <repo> [...args]
 ## 作为 npm 包（bundler 场景）
 
 ```ts
-import { scanRepo, getScan } from "xiaoyou-code-indexer";
-import { projectOverview, traceFlow } from "xiaoyou-code-indexer/query";
-import type { ProjectMap } from "xiaoyou-code-indexer/types";
+import { scanRepo, getScan } from "code-indexer";
+import { projectOverview, traceFlow } from "code-indexer/query";
+import type { ProjectMap } from "code-indexer/types";
 ```
 
 exports 白名单只暴露 `. / ./types / ./endpoint-types / ./via-label / ./query`；产物为 ESM + 独立 `dist/types` 声明，供 Next/webpack 等 bundler 消费。CLI 与 MCP 入口走 tsx 直跑 TS 源，无需构建即可使用。

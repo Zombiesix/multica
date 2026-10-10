@@ -3,13 +3,9 @@
 import {
   type Endpoint,
   resolveModuleEndpoints,
-} from "xiaoyou-code-indexer/endpoint-types";
-import type {
-  ComponentNode,
-  ProjectMap,
-  Warning,
-} from "xiaoyou-code-indexer/types";
-import { viaLabel } from "xiaoyou-code-indexer/via-label";
+} from "code-indexer/endpoint-types";
+import type { ComponentNode, ProjectMap, Warning } from "code-indexer/types";
+import { viaLabel } from "code-indexer/via-label";
 
 function EndpointList({ endpoints }: { endpoints: Endpoint[] }) {
   if (endpoints.length === 0) return null;

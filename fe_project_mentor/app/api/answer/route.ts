@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { scanRepo } from "xiaoyou-code-indexer";
+import { scanRepo } from "code-indexer";
 import { assertLlmReady, loadConfig } from "@/lib/config";
 import { deriveQuestions } from "@/lib/mentor/questions";
 import { storeForRepo } from "@/lib/mentor/session";

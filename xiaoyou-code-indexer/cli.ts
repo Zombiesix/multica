@@ -11,7 +11,7 @@ import {
 } from "./src/query";
 import { serve } from "./mcp";
 
-const USAGE = `xiaoyou-code-indexer - Vue3 repo static indexer
+const USAGE = `code-indexer - Vue3 repo static indexer
 
 Usage:
   xiaoyou-index scan <repo>                    full ProjectMap JSON (large)

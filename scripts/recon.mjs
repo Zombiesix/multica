@@ -4,7 +4,7 @@
  *
  * 用法：node scripts/recon.mjs <别名>      例：node scripts/recon.mjs R-371467
  *
- * 数据源：xiaoyou-code-indexer 的 `scan`（一次调用拿全量 ProjectMap），
+ * 数据源：code-indexer 的 `scan`（一次调用拿全量 ProjectMap），
  *         扫的是主仓 gitlab/<仓名>，不是 worktree。
  * 产出：docs/requirements/<别名>/recon.md（覆盖式，幂等）
  *
@@ -17,7 +17,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const INDEXER_DIR = path.join(ROOT, "xiaoyou-code-indexer");
+const INDEXER_DIR = path.join(ROOT, "code-indexer");
 const INDEXER_CLI = path.join(INDEXER_DIR, "bin", "cli.mjs");
 
 const MAX_ENDPOINTS_PER_DOMAIN = 40;
@@ -268,7 +268,7 @@ const L = [];
 L.push(`# ${alias} - 事实底稿（recon）`);
 L.push("");
 L.push(`> 由 \`node scripts/recon.mjs ${alias}\` 覆盖生成（确定性产出，无 LLM 判断）。`);
-L.push(`> 数据源：xiaoyou-code-indexer scan 主仓 \`gitlab/${repoName}\`。**空白 = 索引器无产出，不等于该仓没有这段代码。**`);
+L.push(`> 数据源：code-indexer scan 主仓 \`gitlab/${repoName}\`。**空白 = 索引器无产出，不等于该仓没有这段代码。**`);
 L.push("> 完整接口清单见同目录 `recon-endpoints.txt`（一行一条 `文件<TAB>METHOD<TAB>URL<TAB>fn`），本文件只放样例。");
 L.push("");
 L.push("## §0 探活与可索引判定");

@@ -1,5 +1,5 @@
-import type { Endpoint } from "xiaoyou-code-indexer/endpoint-types";
-import type { ProjectMap } from "xiaoyou-code-indexer/types";
+import type { Endpoint } from "code-indexer/endpoint-types";
+import type { ProjectMap } from "code-indexer/types";
 import type { EntryKind } from "@/lib/knowledge/schema";
 
 export type QuestionCategory =

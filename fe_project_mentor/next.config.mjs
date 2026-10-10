@@ -8,10 +8,10 @@ const nextConfig = {
 
   // file: 拷贝包会让 build traces（@vercel/nft）分析崩溃，本项目不用 standalone 部署，直接排除
   outputFileTracingExcludes: {
-    "*": ["node_modules/xiaoyou-code-indexer/**"],
+    "*": ["node_modules/code-indexer/**"],
   },
   webpack: config => {
-    // serverExternalPackages 只对顶层 node_modules 请求生效；xiaoyou-code-indexer
+    // serverExternalPackages 只对顶层 node_modules 请求生效；code-indexer
     // 是 file: 拷贝、自带嵌套 node_modules，其内部的 @vue/compiler-* / typescript
     // 请求必须在解析前就外置，否则嵌套拷贝会被连带动打包。
     config.externals.push({

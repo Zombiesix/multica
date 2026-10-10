@@ -1,5 +1,5 @@
 {
-  "name": "xiaoyou-code-indexer",
+  "name": "code-indexer",
   "version": "0.1.0",
   "private": true,
   "description": "Vue3 repo static indexer: routes / modules / API domains / component graph / warnings. CLI + stdio MCP server.",

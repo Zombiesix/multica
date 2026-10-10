@@ -28,7 +28,7 @@
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "xiaoyou-code-indexer": "file:../xiaoyou-code-indexer",
+    "code-indexer": "file:../code-indexer",
     "zod": "^4.6.5"
   },
   "devDependencies": {

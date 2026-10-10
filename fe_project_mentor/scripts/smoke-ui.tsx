@@ -1,7 +1,7 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource react */
 import { renderToString } from "react-dom/server";
-import { scanRepo } from "xiaoyou-code-indexer";
+import { scanRepo } from "code-indexer";
 import ProjectMapView from "../lib/ui/ProjectMapView";
 
 /**

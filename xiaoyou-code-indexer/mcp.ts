@@ -19,7 +19,7 @@ import {
  */
 
 export function serve(repoPath: string): void {
-  const server = new McpServer({ name: "xiaoyou-code-indexer", version: "0.1.0" });
+  const server = new McpServer({ name: "code-indexer", version: "0.1.0" });
 
   server.registerTool(
     "get_project_map",

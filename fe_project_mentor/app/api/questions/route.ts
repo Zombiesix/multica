@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { scanRepo } from "xiaoyou-code-indexer";
+import { scanRepo } from "code-indexer";
 import { deriveQuestions } from "@/lib/mentor/questions";
 import { PathRejected, assertAllowedPath } from "@/lib/security/paths";
 

@@ -1,7 +1,7 @@
 import path from "node:path";
-import { scanRepo } from "xiaoyou-code-indexer";
-import type { ComponentNode } from "xiaoyou-code-indexer/types";
-import { viaLabel } from "xiaoyou-code-indexer/via-label";
+import { scanRepo } from "code-indexer";
+import type { ComponentNode } from "code-indexer/types";
+import { viaLabel } from "code-indexer/via-label";
 
 /** 用法: yarn tree <仓路径> <模块名>  —— 带完整路径打印某个模块的组件树 */
 const [target, moduleName] = process.argv.slice(2);

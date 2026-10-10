@@ -1,7 +1,7 @@
 import path from "node:path";
-import { scanRepo } from "xiaoyou-code-indexer";
-import { resolveModuleEndpoints } from "xiaoyou-code-indexer/endpoint-types";
-import type { ComponentNode } from "xiaoyou-code-indexer/types";
+import { scanRepo } from "code-indexer";
+import { resolveModuleEndpoints } from "code-indexer/endpoint-types";
+import type { ComponentNode } from "code-indexer/types";
 
 /**
  * M1 验收：对着 iho-icis-ui 的已知事实断言。

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ProjectMap } from "xiaoyou-code-indexer/types";
+import type { ProjectMap } from "code-indexer/types";
 import ProjectMapView from "@/lib/ui/ProjectMapView";
 
 const RECENT_KEY = "xiaoyou.recent";

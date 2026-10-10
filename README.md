@@ -22,13 +22,13 @@
             └────────────┴──────────────────────────────────────────┴─────────────────┴─────────────┴──────────
 ```
 
-| 步骤 | 做什么 | 在哪执行 | 由谁操作 | 说明 |
-|---|---|---|---|---|
-| **① 获取需求** | 从协作平台(teamwork)拉取需求列表/详情入库 | xiaoqian-manager | 小前端 点击同步 | 过滤条件 `user=小前端`，落盘 `tasks.json` |
-| **②③ 规划+编码 / 审查+修复（AgentTeam）** | AI 出计划 → 人工拍板 → 写代码 → 审查 → 修复 | multica 家 `/pipeline` 剧本 | AI + 小前端拍板 | **只用 xiaoyou-code-indexer、swagger-mcp-server 洞察代码** |
-| **④ 人工测试** | 在浏览器/页面做人工效果测试 | xiaoqian-manager test 阶段 | 小前端 点完成 | 通过才进入下一步 |
-| **⑤ 提交合并** | 手工把代码提交、合并到远程 | xiaoqian-manager deploy 阶段 | 小前端 手动点完成 | 选仓库 + 目标分支，触发 git 提交推送/cherry-pick |
-| **⑥ 填工时** | 把本次研发工时写回协作平台 | xiaoqian-manager 工时 | 小前端 触发 | 复用协作平台登录态 |
+| 步骤                                      | 做什么                                      | 在哪执行                     | 由谁操作          | 说明                                                       |
+| ----------------------------------------- | ------------------------------------------- | ---------------------------- | ----------------- | ---------------------------------------------------------- |
+| **① 获取需求**                            | 从协作平台(teamwork)拉取需求列表/详情入库   | xiaoqian-manager             | 小前端 点击同步   | 过滤条件 `user=小前端`，落盘 `tasks.json`                  |
+| **②③ 规划+编码 / 审查+修复（AgentTeam）** | AI 出计划 → 人工拍板 → 写代码 → 审查 → 修复 | multica 家 `/pipeline` 剧本  | AI + 小前端拍板   | **只用 xiaoyou-code-indexer、swagger-mcp-server 洞察代码** |
+| **④ 人工测试**                            | 在浏览器/页面做人工效果测试                 | xiaoqian-manager test 阶段   | 小前端 点完成     | 通过才进入下一步                                           |
+| **⑤ 提交合并**                            | 手工把代码提交、合并到远程                  | xiaoqian-manager deploy 阶段 | 小前端 手动点完成 | 选仓库 + 目标分支，触发 git 提交推送/cherry-pick           |
+| **⑥ 填工时**                              | 把本次研发工时写回协作平台                  | xiaoqian-manager 工时        | 小前端 触发       | 复用协作平台登录态                                         |
 
 ### 一个重要的边界（②③ vs ⑤）
 
@@ -89,9 +89,9 @@
 
 AgentTeam 在规划/写码时靠这两个工具洞察陌生代码：
 
-| 工具 | 干什么 | 怎么跑 |
-|---|---|---|
-| **xiaoyou-code-indexer** | Vue3 仓库静态索引器：扫目标仓生成 ProjectMap（路由/模块/API 域/组件图/告警），CLI 或 stdio MCP 供 Agent 消费 | `node bin/cli.mjs <cmd> <repo>` |
+| 工具                   | 干什么                                                                                                                                                    | 怎么跑                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **code-indexer**       | Vue3 仓库静态索引器：扫目标仓生成 ProjectMap（路由/模块/API 域/组件图/告警），CLI 或 stdio MCP 供 Agent 消费                                              | `node bin/cli.mjs <cmd> <repo>`             |
 | **swagger-mcp-server** | swagger-multi MCP **补丁版**服务器（修复 URL 解析截断、非法 JSON 两个 bug），覆盖 nursing(10 分组)/icis/treat/cssd 共 13 个服务，给 Agent 喂实时 API 文档 | 配置写入用户全局 `~/.claude.json`，重启生效 |
 
 ---
@@ -114,7 +114,7 @@ docs/requirements/
                         test-report.md worklog.md orchestrator-log.md
                         state.json
 xiaoqian-manager/       小千管理(Next.js) —— 全部流程的宿主(①④⑤⑥)
-xiaoyou-code-indexer/   Vue3 仓库静态索引器(CLI + MCP),②③步用
+code-indexer/   Vue3 仓库静态索引器(CLI + MCP),②③步用
 swagger-mcp-server/     swagger-multi MCP 补丁版服务器,②③步用
 om/                     发版看板(独立,见 §7)
 fe_project_mentor/      小游导师(独立,暂缓,见 §7)
@@ -135,13 +135,13 @@ fe_project_mentor/      小游导师(独立,暂缓,见 §7)
 
 ## 5. xiaoqian-manager 各项功能对应的代码位置
 
-| 总流程步骤 | 触发点 | 实现位置 |
-|---|---|---|
-| ① 获取需求 | 同步按钮(Sync) | `lib/server/teamwork/client.ts`(fetchList,user=小前端) + `mapper.ts` → `data/tasks.json` |
-| ②③ 规划+编码+审查+修复 | 卡片→worktree 路径给 AgentTeam | 见 §2；`/pipeline` 剧本 + 4 subagent |
-| ④ 人工测试 | test 阶段 点完成 | `components/task/StageSheet.tsx`(test stage) |
-| ⑤ 提交合并 | deploy 阶段 选仓库+目标分支 点完成 | `lib/server/git/deploy.ts`(pull→commit→push→cherry-pick→push) |
-| ⑥ 填工时 | 工时入口 | `lib/server/teamwork/client.ts` 的 `saveWorkHours` |
+| 总流程步骤             | 触发点                             | 实现位置                                                                                 |
+| ---------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
+| ① 获取需求             | 同步按钮(Sync)                     | `lib/server/teamwork/client.ts`(fetchList,user=小前端) + `mapper.ts` → `data/tasks.json` |
+| ②③ 规划+编码+审查+修复 | 卡片→worktree 路径给 AgentTeam     | 见 §2；`/pipeline` 剧本 + 4 subagent                                                     |
+| ④ 人工测试             | test 阶段 点完成                   | `components/task/StageSheet.tsx`(test stage)                                             |
+| ⑤ 提交合并             | deploy 阶段 选仓库+目标分支 点完成 | `lib/server/git/deploy.ts`(pull→commit→push→cherry-pick→push)                            |
+| ⑥ 填工时               | 工时入口                           | `lib/server/teamwork/client.ts` 的 `saveWorkHours`                                       |
 
 ---
 
@@ -177,14 +177,14 @@ fe_project_mentor/      小游导师(独立,暂缓,见 §7)
 
 ### 流程链（协作）
 
-`xiaoqian-manager`(宿主) ↔ `AgentTeam`(`/pipeline` 剧本 + 4 subagent + pipeline-feed skill) ↔ `xiaoyou-code-indexer` / `swagger-mcp-server`(②③步的眼睛)
+`xiaoqian-manager`(宿主) ↔ `AgentTeam`(`/pipeline` 剧本 + 4 subagent + pipeline-feed skill) ↔ `code-indexer` / `swagger-mcp-server`(②③步的眼睛)
 
 ### 独立项目（不参与总流程）
 
-| 项目 | 是什么 | 状态 |
-|---|---|---|
-| [om/](om/) | 发版看板：按后端人员分组跟踪各前端项目发版（打包状态/版本号/进度），纯本地，数据在 `om/data.json` | 独立部署（`yarn om` → :3000） |
-| [fe_project_mentor/](fe_project_mentor/) | 小游 · 前端项目导师：能带人读懂陌生前端项目并让理解沉淀成团队资产 | **暂时不考虑，后面得改** |
+| 项目                                     | 是什么                                                                                            | 状态                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- |
+| [om/](om/)                               | 发版看板：按后端人员分组跟踪各前端项目发版（打包状态/版本号/进度），纯本地，数据在 `om/data.json` | 独立部署（`yarn om` → :3000） |
+| [fe_project_mentor/](fe_project_mentor/) | 小游 · 前端项目导师：能带人读懂陌生前端项目并让理解沉淀成团队资产                                 | **暂时不考虑，后面得改**      |
 
 ---
 
@@ -234,26 +234,26 @@ fe_project_mentor/      小游导师(独立,暂缓,见 §7)
 
 ### 踩过的坑（都排掉了）
 
-| 坑 | 解法 |
-|---|---|
-| npm 全局装过同名 `docker` 文档生成器，抢 PATH | 管理员 PowerShell 删 shim |
-| ghcr.io 国内被墙 | `ghcr.nju.edu.cn` 南大镜像 |
-| 完整版镜像 9GB | slim 版 1.88GB + 外部 embedding 服务 |
-| 方舟 Plan Key 路径隔离 | 只在 `/api/plan/v1` 有效，标准 `/api/v3` 一律 401 |
-| 方舟 embedding 全不能用 | 250515 即将下线；vision-251215 是多模态专用 API 格式不兼容；Plan Key 调不了 embeddings → **换 SiliconFlow bge-m3** |
-| pgvector HNSW 索引上限 2000 维 | bge-m3 原生 1024 维，天然合规 |
-| `RERANKER_PROVIDER=none` 启动报错 | 合法值没有 none，用 `rrf` |
-| recall/reflect 的 `budget` 传数字报 422 | 是枚举：`low` / `mid` / `high` |
-| 三处调用方端点全是文档假设 | 已对照 OpenAPI 实测修正（见下方真实端点） |
+| 坑                                            | 解法                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| npm 全局装过同名 `docker` 文档生成器，抢 PATH | 管理员 PowerShell 删 shim                                                                                          |
+| ghcr.io 国内被墙                              | `ghcr.nju.edu.cn` 南大镜像                                                                                         |
+| 完整版镜像 9GB                                | slim 版 1.88GB + 外部 embedding 服务                                                                               |
+| 方舟 Plan Key 路径隔离                        | 只在 `/api/plan/v1` 有效，标准 `/api/v3` 一律 401                                                                  |
+| 方舟 embedding 全不能用                       | 250515 即将下线；vision-251215 是多模态专用 API 格式不兼容；Plan Key 调不了 embeddings → **换 SiliconFlow bge-m3** |
+| pgvector HNSW 索引上限 2000 维                | bge-m3 原生 1024 维，天然合规                                                                                      |
+| `RERANKER_PROVIDER=none` 启动报错             | 合法值没有 none，用 `rrf`                                                                                          |
+| recall/reflect 的 `budget` 传数字报 422       | 是枚举：`low` / `mid` / `high`                                                                                     |
+| 三处调用方端点全是文档假设                    | 已对照 OpenAPI 实测修正（见下方真实端点）                                                                          |
 
 ### 真实 API 端点（OpenAPI 实测验证）
 
-| 操作 | 端点 | 请求体 |
-|---|---|---|
-| 建库 | `PUT /v1/default/banks/{bank_id}` | `{}` |
-| retain | `POST /v1/default/banks/{bank_id}/memories` | `{"items":[{"content":"...","context":"..."}]}` |
-| recall | `POST /v1/default/banks/{bank_id}/memories/recall` | `{"query":"...","budget":"low"}` |
-| reflect | `POST /v1/default/banks/{bank_id}/reflect` | `{"query":"..."}` |
+| 操作    | 端点                                               | 请求体                                          |
+| ------- | -------------------------------------------------- | ----------------------------------------------- |
+| 建库    | `PUT /v1/default/banks/{bank_id}`                  | `{}`                                            |
+| retain  | `POST /v1/default/banks/{bank_id}/memories`        | `{"items":[{"content":"...","context":"..."}]}` |
+| recall  | `POST /v1/default/banks/{bank_id}/memories/recall` | `{"query":"...","budget":"low"}`                |
+| reflect | `POST /v1/default/banks/{bank_id}/reflect`         | `{"query":"..."}`                               |
 
 ### 接入点（已接线）
 

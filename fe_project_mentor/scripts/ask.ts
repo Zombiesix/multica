@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { scanRepo } from "xiaoyou-code-indexer";
+import { scanRepo } from "code-indexer";
 import { loadConfig, assertLlmReady } from "../lib/config";
 import { KnowledgeStore } from "../lib/knowledge/store";
 import { deriveQuestions } from "../lib/mentor/questions";

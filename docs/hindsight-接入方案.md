@@ -12,13 +12,13 @@
 
 先明确痛点在流水线中的位置，接入才有靶子。
 
-| # | 现状 | 造成的"对不齐" | Hindsight 对策 |
-|---|------|----------------|----------------|
-| 1 | reviewer 的 rubric 是 5 条通用规则（越界/死代码/测试/偏离需求/敏感文件），**不含人的口味** | 代码"能跑、不越界"，但写法、拆分粒度、抽象层级不是你会写的样子 | 用 Reflect 生成"人工评审画像"，回写 reviewer rubric（见 §5.3） |
-| 2 | 每个需求 = 新会话 + 新 worktree + 新 docs 目录，**需求之间零记忆** | 上个需求里你纠正过的问题，下个需求原样再犯 | per-产品线 bank + planning 阶段 recall（见 §4.2） |
-| 3 | `decisions.md` 只记录"拍板结果"，散落在各需求目录，**从未被消费** | 相同场景下 agent 推理和当初拍板不一致 | done 阶段 retain 拍板理由进 bank，planning 时 recall（见 §4.4） |
-| 4 | planner/coder/reviewer 全是"一次性 subagent"，prompt 静态 | agent 不会随纠正变好，纠正记录随会话消亡 | Mental Model 常驻知识页，subagent 启动即携带（见 §5.2） |
-| 5 | 小游导师（fe_project_mentor）能产出团队资产文档，但**是静态文档，不是可查询记忆** | "读懂项目"有了，"项目经验驱动决策"没有 | 把导师产物作为初始 retain 素材，之后靠三操作滚动（见 §7） |
+| #   | 现状                                                                                       | 造成的"对不齐"                                                 | Hindsight 对策                                                  |
+| --- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1   | reviewer 的 rubric 是 5 条通用规则（越界/死代码/测试/偏离需求/敏感文件），**不含人的口味** | 代码"能跑、不越界"，但写法、拆分粒度、抽象层级不是你会写的样子 | 用 Reflect 生成"人工评审画像"，回写 reviewer rubric（见 §5.3）  |
+| 2   | 每个需求 = 新会话 + 新 worktree + 新 docs 目录，**需求之间零记忆**                         | 上个需求里你纠正过的问题，下个需求原样再犯                     | per-产品线 bank + planning 阶段 recall（见 §4.2）               |
+| 3   | `decisions.md` 只记录"拍板结果"，散落在各需求目录，**从未被消费**                          | 相同场景下 agent 推理和当初拍板不一致                          | done 阶段 retain 拍板理由进 bank，planning 时 recall（见 §4.4） |
+| 4   | planner/coder/reviewer 全是"一次性 subagent"，prompt 静态                                  | agent 不会随纠正变好，纠正记录随会话消亡                       | Mental Model 常驻知识页，subagent 启动即携带（见 §5.2）         |
+| 5   | 小游导师（fe_project_mentor）能产出团队资产文档，但**是静态文档，不是可查询记忆**          | "读懂项目"有了，"项目经验驱动决策"没有                         | 把导师产物作为初始 retain 素材，之后靠三操作滚动（见 §7）       |
 
 结论：multica 的文件流水线解决的是**过程可审计**，Hindsight 补的是**经验可学习**。两者正交，不冲突。
 
@@ -56,11 +56,11 @@
 
 不要按需求建 bank（需求记忆已由 docs 落盘承担），按**经验复用维度**建：
 
-| bank_id | 存什么 | 谁写入 | 谁读取 |
-|---|---|---|---|
-| `li-expertise` | 人工的评审标准、设计偏好、否决理由、"为什么不" | orchestrator（done/修复后）+ 人工随手 | reviewer、planner |
-| `multica-project` | 流水线全局约束（node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则）、project-map 映射、历史拍板 | orchestrator（init/done） | planner、orchestrator |
-| `<产品线>`（如 `iho-cssd-ui`、`reuseapp-blood-bank-web`、`iho-nurse-manager-ui`） | 该仓的架构约定、踩坑、API 域特点、历史需求决策摘要 | orchestrator（done） | planner、coder |
+| bank_id                                                                           | 存什么                                                                                                                | 谁写入                                | 谁读取                |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------- |
+| `li-expertise`                                                                    | 人工的评审标准、设计偏好、否决理由、"为什么不"                                                                        | orchestrator（done/修复后）+ 人工随手 | reviewer、planner     |
+| `multica-project`                                                                 | 流水线全局约束（node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则）、project-map 映射、历史拍板 | orchestrator（init/done）             | planner、orchestrator |
+| `<产品线>`（如 `iho-cssd-ui`、`reuseapp-blood-bank-web`、`iho-nurse-manager-ui`） | 该仓的架构约定、踩坑、API 域特点、历史需求决策摘要                                                                    | orchestrator（done）                  | planner、coder        |
 
 **bank 与现有文件的对应关系：**
 
@@ -180,12 +180,12 @@ reflect 不自动入库（防止 LLM 幻觉污染记忆），**人工过目是�
 
 ### 5.1 四类高价值 retain 素材（按价值排序）
 
-| 优先级 | 素材 | 时机 | 说明 |
-|---|---|---|---|
-| ★★★ | **人工否决 AI 方案的时刻** | 任何阶段发生即记 | "agent 建议 X，我否了选了 Y，因为…" —— 最难蒸馏、价值最高 |
-| ★★★ | decisions.md 拍板理由 | plan_confirm / fixing 转人工 | 决策逻辑显式化 |
-| ★★☆ | reviewer 纠正的重复问题 | fixing 后 | 变成 checklist 类记忆 |
-| ★☆☆ | 踩坑与排错结论 | coding/done | 技术债类记忆 |
+| 优先级 | 素材                       | 时机                         | 说明                                                      |
+| ------ | -------------------------- | ---------------------------- | --------------------------------------------------------- |
+| ★★★    | **人工否决 AI 方案的时刻** | 任何阶段发生即记             | "agent 建议 X，我否了选了 Y，因为…" —— 最难蒸馏、价值最高 |
+| ★★★    | decisions.md 拍板理由      | plan_confirm / fixing 转人工 | 决策逻辑显式化                                            |
+| ★★☆    | reviewer 纠正的重复问题    | fixing 后                    | 变成 checklist 类记忆                                     |
+| ★☆☆    | 踩坑与排错结论             | coding/done                  | 技术债类记忆                                              |
 
 规则：**写"为什么"，不写"是什么"**。`"用了 Zustand"` 是垃圾；`"此处选 Zustand 因无时间旅行需求且样板少"` 是资产。
 
@@ -221,22 +221,22 @@ reflect(bank_id=li-expertise, query="汇总近期所有否决与纠正记录，�
 
 ### 5.4 对齐度量（怎么知道有效了）
 
-| 指标 | 怎么测 | 健康方向 |
-|---|---|---|
-| reviewer「重复问题」标注数 | review.md 统计 | 逐月下降 |
-| fixing 轮均 blocker 数 | state.json / review.md 统计 | 同类需求下降 |
-| M 类问题（记忆冲突）出现率 | questions.md 统计 | 初期上升（记忆在起作用）、随后下降（记忆在更新） |
-| 拍板 retain 命中率 | planning 阶段 recall 命中且被 plan 引用的比例 | 稳定 >50% |
-| plan_confirm 人工改动量 | 人工对 plan.md 的修改幅度 | 同类需求下降 |
+| 指标                       | 怎么测                                        | 健康方向                                         |
+| -------------------------- | --------------------------------------------- | ------------------------------------------------ |
+| reviewer「重复问题」标注数 | review.md 统计                                | 逐月下降                                         |
+| fixing 轮均 blocker 数     | state.json / review.md 统计                   | 同类需求下降                                     |
+| M 类问题（记忆冲突）出现率 | questions.md 统计                             | 初期上升（记忆在起作用）、随后下降（记忆在更新） |
+| 拍板 retain 命中率         | planning 阶段 recall 命中且被 plan 引用的比例 | 稳定 >50%                                        |
+| plan_confirm 人工改动量    | 人工对 plan.md 的修改幅度                     | 同类需求下降                                     |
 
 ---
 
 ## 6. 接入方式选型：MCP 还是脚本？
 
-| 方案 | 做法 | 优点 | 缺点 | 建议 |
-|---|---|---|---|---|
-| **A. MCP** | Hindsight 服务端自带 `/mcp/{bank_id}/`，在 `.claude/settings.json` 配置后，planner/reviewer/orchestrator 直接获得 retain/recall/reflect 工具 | subagent 自主决定何时查记忆，最自然；agent md 只需在 tools 处加 `mcp__hindsight__*` | 工具面变大，可能干扰"视野最小化"；subagent 权限需逐一收紧 | **长期方案** |
-| **B. 剧本脚本** | orchestrator 用 Bash 调一个封装好的 `hindsight-memo.py`（recall/retain/reflect 三个子命令），结果落盘成小文件再让 subagent 读 | 与现有"只传路径"风格完全一致；subagent 工具面不变；行为完全受剧本控制 | 灵活性差，只有剧本规定的时点才触发 | **推荐起步方案** |
+| 方案            | 做法                                                                                                                                         | 优点                                                                                | 缺点                                                      | 建议             |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------- |
+| **A. MCP**      | Hindsight 服务端自带 `/mcp/{bank_id}/`，在 `.claude/settings.json` 配置后，planner/reviewer/orchestrator 直接获得 retain/recall/reflect 工具 | subagent 自主决定何时查记忆，最自然；agent md 只需在 tools 处加 `mcp__hindsight__*` | 工具面变大，可能干扰"视野最小化"；subagent 权限需逐一收紧 | **长期方案**     |
+| **B. 剧本脚本** | orchestrator 用 Bash 调一个封装好的 `hindsight-memo.py`（recall/retain/reflect 三个子命令），结果落盘成小文件再让 subagent 读                | 与现有"只传路径"风格完全一致；subagent 工具面不变；行为完全受剧本控制               | 灵活性差，只有剧本规定的时点才触发                        | **推荐起步方案** |
 
 **建议：Phase 1–2 用方案 B（脚本化、可审计），跑顺后 Phase 3 把 reviewer 切到方案 A（它需要最灵活的记忆访问）。**
 
@@ -276,31 +276,35 @@ if a.out:
 
 ## 7. 与现有子项目的关系（不重复造轮子）
 
-| 子项目 | 与 Hindsight 的关系 |
-|---|---|
+| 子项目                            | 与 Hindsight 的关系                                                                                                                                             |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **fe_project_mentor（小游导师）** | 导师产物（项目理解文档、knowledge pages）是 `<产品线bank>` 的**优质初始 retain 素材**，一次批量入库；之后银行靠流水线的三操作滚动更新，导师不再重复输出静态文档 |
-| **xiaoyou-code-indexer** | 生成的 ProjectMap（路由/模块/API 域/组件图）同样可初始 retain 进产品线 bank，作为 planner 的架构上下文 |
-| **om / xiaoqian-manager** | 与记忆无关，不动 |
-| **swagger-mcp-server** | 与记忆无关，不动；planner recall 到 API 域问题时仍走原 MCP |
+| **code-indexer**                  | 生成的 ProjectMap（路由/模块/API 域/组件图）同样可初始 retain 进产品线 bank，作为 planner 的架构上下文                                                          |
+| **om / xiaoqian-manager**         | 与记忆无关，不动                                                                                                                                                |
+| **swagger-mcp-server**            | 与记忆无关，不动；planner recall 到 API 域问题时仍走原 MCP                                                                                                      |
 
 ---
 
 ## 8. 分阶段落地与验收
 
 ### Phase 0：部署 + 静默蓄水（第 1–2 周）
+
 - 部署服务端，建 bank（§2）
 - 只做两件事：init 时 recall（§4.1）、done 时拍板 retain（§4.4）
 - **验收**：recall 命中率有统计、拍板入库 ≥10 条、人工无感知负担
 
 ### Phase 1：planner/reviewer 增强（第 3–4 周）
+
 - planner 双库 recall + M 类问题（§4.2）；reviewer 吃画像（§4.5）
 - **验收**：plan.md 出现「相关约定」小节；review.md 出现「口味符合度」节；同类需求 fixing 轮 blocker 不升
 
 ### Phase 2：复盘闭环 + Mental Models（第 2 个月）
+
 - done 复盘 reflect + 人工过目回流（§4.6）；建 3+1 个心智模型（§5.2）；对齐度量看板（§5.4）
 - **验收**：Q1–Q3 版本开始演进；度量基线建立
 
 ### Phase 3：固化回写（第 3 个月起，常态化）
+
 - reviewer rubric 回写（§5.3）；reviewer 切 MCP 直连；Knowledge Pages 投影到 `docs/team-knowledge/`
 - **验收**：reviewer.md 的 rubric 有来自银行的真实条目；「重复问题」率环比下降
 
@@ -308,14 +312,14 @@ if a.out:
 
 ## 9. 风险与边界
 
-| 风险 | 缓解 |
-|---|---|
-| 垃圾记忆污染检索质量 | 只 retain"有理由的拍板/否决"；reflect 结果人工过目才入库；每季度人工抽查 bank 抽样 |
-| 记忆与现状冲突（记忆过期） | M 类问题机制（§4.2）显式暴露冲突，人工裁决后修正记忆 |
-| 上下文膨胀拖累 subagent | coder 不直连记忆；recall 一律带 token_budget 截断；「历史参考」只在 plan.md 摘要级 |
-| 成本 | retain 抽取用 haiku/mini 级模型；心智模型读取零成本；recall 频次有剧本控制 |
-| 敏感信息入库 | 遵守现有"敏感文件人工审批"门禁 + 开启 per-bank Memory Defense（45 种密钥/PII 模式扫描） |
-| 单机 Docker 数据安全 | `hindsight-data` volume 纳入本机备份；Hindsight 支持外部 PG，后续可迁 |
+| 风险                       | 缓解                                                                                    |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| 垃圾记忆污染检索质量       | 只 retain"有理由的拍板/否决"；reflect 结果人工过目才入库；每季度人工抽查 bank 抽样      |
+| 记忆与现状冲突（记忆过期） | M 类问题机制（§4.2）显式暴露冲突，人工裁决后修正记忆                                    |
+| 上下文膨胀拖累 subagent    | coder 不直连记忆；recall 一律带 token_budget 截断；「历史参考」只在 plan.md 摘要级      |
+| 成本                       | retain 抽取用 haiku/mini 级模型；心智模型读取零成本；recall 频次有剧本控制              |
+| 敏感信息入库               | 遵守现有"敏感文件人工审批"门禁 + 开启 per-bank Memory Defense（45 种密钥/PII 模式扫描） |
+| 单机 Docker 数据安全       | `hindsight-data` volume 纳入本机备份；Hindsight 支持外部 PG，后续可迁                   |
 
 ---
 

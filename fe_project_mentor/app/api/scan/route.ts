@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { looksLikeRepo, scanRepo } from "xiaoyou-code-indexer";
+import { looksLikeRepo, scanRepo } from "code-indexer";
 import { PathRejected, assertAllowedPath } from "@/lib/security/paths";
 
 export const runtime = "nodejs";

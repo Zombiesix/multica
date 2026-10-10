@@ -1424,7 +1424,7 @@ wrappy@1:
   resolved "http://120.25.59.85:14873/wrappy/-/wrappy-1.0.2.tgz#b5243d8f3ec1aa35f1364605bc0d1036e30ab69f"
   integrity sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==
 
-"xiaoyou-code-indexer@file:../xiaoyou-code-indexer":
+"code-indexer@file:../code-indexer":
   version "0.1.0"
   dependencies:
     "@modelcontextprotocol/sdk" "^1.30.1"

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { getScan } from "xiaoyou-code-indexer";
-import { projectOverview, traceFlow } from "xiaoyou-code-indexer/query";
+import { getScan } from "code-indexer";
+import { projectOverview, traceFlow } from "code-indexer/query";
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { slugify, validateEntry, type Confidence, type EntryKind, type KnowledgeEntry } from "@/lib/knowledge/schema";
 import { storeForRepo } from "@/lib/mentor/session";
@@ -9,7 +9,7 @@ import { storeForRepo } from "@/lib/mentor/session";
  * 小游暴露给 mentor Agent 的工具。
  *
  * 设计约束（plan 4.3 / 1.1）：
- * - Agent 不直接啃源码，只消费 xiaoyou-code-indexer 的索引结果——成本与一致性可控。
+ * - Agent 不直接啃源码，只消费 code-indexer 的索引结果——成本与一致性可控。
  * - propose_knowledge 走 store.propose 的同一套防腐校验（evidence 必填、不能写 confirmed）。
  */
 
