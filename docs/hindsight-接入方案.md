@@ -18,7 +18,6 @@
 | 2   | 每个需求 = 新会话 + 新 worktree + 新 docs 目录，**需求之间零记忆**                         | 上个需求里你纠正过的问题，下个需求原样再犯                     | per-产品线 bank + planning 阶段 recall（见 §4.2）               |
 | 3   | `decisions.md` 只记录"拍板结果"，散落在各需求目录，**从未被消费**                          | 相同场景下 agent 推理和当初拍板不一致                          | done 阶段 retain 拍板理由进 bank，planning 时 recall（见 §4.4） |
 | 4   | planner/coder/reviewer 全是"一次性 subagent"，prompt 静态                                  | agent 不会随纠正变好，纠正记录随会话消亡                       | Mental Model 常驻知识页，subagent 启动即携带（见 §5.2）         |
-| 5   | 小游导师（fe_project_mentor）能产出团队资产文档，但**是静态文档，不是可查询记忆**          | "读懂项目"有了，"项目经验驱动决策"没有                         | 把导师产物作为初始 retain 素材，之后靠三操作滚动（见 §7）       |
 
 结论：multica 的文件流水线解决的是**过程可审计**，Hindsight 补的是**经验可学习**。两者正交，不冲突。
 
