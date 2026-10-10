@@ -1,5 +1,14 @@
 import { getScan, clearScanCache } from "./src/cache";
-import { projectOverview, traceFlow, listWarnings, searchIndex } from "./src/query";
+import {
+  projectOverview,
+  traceFlow,
+  traceEvent,
+  traceState,
+  channelsSummary,
+  moduleGraphView,
+  listWarnings,
+  searchIndex,
+} from "./src/query";
 import { serve } from "./mcp";
 
 const USAGE = `xiaoyou-code-indexer - Vue3 repo static indexer
@@ -8,6 +17,14 @@ Usage:
   xiaoyou-index scan <repo>                    full ProjectMap JSON (large)
   xiaoyou-index map <repo>                     compact project overview
   xiaoyou-index trace <repo> <route|module>    trace one business flow
+  xiaoyou-index trace-event <repo> <component> <event>
+                                               who emits -> who listens -> what the handler does
+  xiaoyou-index trace-state <repo> <store>[.<field>]
+                                               who reads / who writes a store field
+  xiaoyou-index channels <repo> [--kind K]     state & event channels
+                                               K = store|event|permission|guard|storage|ws
+  xiaoyou-index modules <repo> [<module>]      cross-module relations
+                                               (omit <module> for the whole graph)
   xiaoyou-index warnings <repo> [--kind K] [--limit N]
   xiaoyou-index search <repo> <keyword>
   xiaoyou-index stats <repo>                   scan stats only
@@ -50,6 +67,31 @@ function main(): void {
       const target = positional[1];
       if (!target) fail("trace needs a route path or module name");
       print(traceFlow(map(), target));
+      break;
+    }
+    case "trace-event": {
+      requireRepo(repo);
+      const component = positional[1];
+      const event = positional[2];
+      if (!component || !event) fail("trace-event needs a component and an event name");
+      print(traceEvent(map(), component, event));
+      break;
+    }
+    case "trace-state": {
+      requireRepo(repo);
+      const target = positional[1];
+      if (!target) fail("trace-state needs a store id (optionally store.field)");
+      print(traceState(map(), target));
+      break;
+    }
+    case "channels": {
+      requireRepo(repo);
+      print(channelsSummary(map(), flags["--kind"]));
+      break;
+    }
+    case "modules": {
+      requireRepo(repo);
+      print(moduleGraphView(map(), positional[1]));
       break;
     }
     case "warnings": {

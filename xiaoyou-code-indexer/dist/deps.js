@@ -1,8 +1,9 @@
 import path from "node:path";
 import * as ts from "typescript";
 import { parse as parseTemplate } from "@vue/compiler-dom";
-import { createSource, readSfcParts, resolveSpecifier, stringValue, } from "./ast";
-import { fileExists, toRepoRel } from "./ignore";
+import { createSource, readSfcParts, stringValue, } from "./ast";
+import { toRepoRel } from "./ignore";
+import { resolveModuleFile } from "./resolve";
 /** Vue 内置 + HTML + SVG 原生标签。这些不是本仓组件，不进组件树。 */
 const NATIVE_TAGS = new Set([
     // Vue 内置
@@ -40,9 +41,23 @@ function componentName(file) {
         return base;
     return path.basename(path.dirname(file)) || base;
 }
-/** 解析模板 AST 收集所有元素标签（含 v-if 各分支） */
-function collectTemplateTags(templateCode) {
-    const tags = new Set();
+const DIRECTIVE_NODE = 7;
+/** `@change="onChange"` → onChange；内联箭头函数 / 复杂表达式 → null */
+function handlerNameOf(exp) {
+    const content = exp && typeof exp === "object" && typeof exp.content === "string"
+        ? exp.content.trim()
+        : "";
+    if (!content)
+        return null;
+    // 简单标识符（可带 `.` 路径）才算 handler 名，`v => v.x` 这类内联的不算
+    return /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(content) ? content : null;
+}
+/**
+ * 解析模板 AST，收集每个元素标签 + 它上面的 `v-on` / `v-model` 绑定。
+ * 含 v-if 各分支。
+ */
+function collectTemplateElements(templateCode) {
+    const out = [];
     let root;
     try {
         root = parseTemplate(templateCode);
@@ -54,29 +69,45 @@ function collectTemplateTags(templateCode) {
         if (!node || typeof node !== "object")
             return;
         if (node.type === ELEMENT_NODE && typeof node.tag === "string") {
-            tags.add(node.tag);
+            const bindings = [];
+            for (const p of node.props ?? []) {
+                if (p?.type !== DIRECTIVE_NODE)
+                    continue;
+                const line = p.loc?.start?.line ?? node.loc?.start?.line ?? 1;
+                // @change / v-on:change
+                if (p.name === "on" && typeof p.arg?.content === "string") {
+                    bindings.push({
+                        event: p.arg.content,
+                        handler: handlerNameOf(p.exp),
+                        line,
+                        via: "v-on",
+                    });
+                    continue;
+                }
+                // v-model / v-model:foo —— 等价于 `@update:modelValue` / `@update:foo`，
+                // 不展开的话这些组件看着"没有任何事件"
+                if (p.name === "model") {
+                    const arg = typeof p.arg?.content === "string" ? p.arg.content : "modelValue";
+                    bindings.push({ event: `update:${arg}`, handler: null, line, via: "v-model" });
+                }
+            }
+            out.push({ tag: node.tag, bindings });
         }
         if (Array.isArray(node.children))
             for (const c of node.children)
                 visit(c);
-        // v-if / v-else-if / v-else 各自成支
         if (Array.isArray(node.branches))
             for (const b of node.branches)
                 visit(b);
     };
     visit(root);
-    return [...tags];
+    return out;
 }
-/** 补全扩展名并确认文件存在；指向 .ts 的一律不算组件 */
-function resolveComponentFile(rel, repoRoot) {
-    const candidates = rel.toLowerCase().endsWith(".vue")
-        ? [rel]
-        : [`${rel}.vue`, `${rel}/index.vue`];
-    for (const c of candidates) {
-        if (fileExists(path.join(repoRoot, c)))
-            return c;
-    }
-    return null;
+/** 只有 .vue 算组件；其余（.ts 工具、store 等）不进组件图 */
+function asComponentFile(resolved) {
+    if (!resolved)
+        return null;
+    return resolved.toLowerCase().endsWith(".vue") ? resolved : null;
 }
 function escapeRe(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -99,10 +130,7 @@ function staticImports(script, absFile, repoRoot, srcDirRel) {
         const spec = stringValue(stmt.moduleSpecifier);
         if (!spec)
             continue;
-        const resolved = resolveSpecifier(spec, absFile, repoRoot, srcDirRel);
-        if (!resolved)
-            continue;
-        const target = resolveComponentFile(resolved, repoRoot);
+        const target = asComponentFile(resolveModuleFile(spec, absFile, repoRoot, srcDirRel));
         if (!target)
             continue;
         const clause = stmt.importClause;
@@ -134,8 +162,7 @@ function asyncVueImports(script, absFile, repoRoot, srcDirRel) {
         if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
             const spec = stringValue(node.arguments[0]);
             if (spec) {
-                const resolved = resolveSpecifier(spec, absFile, repoRoot, srcDirRel);
-                const target = resolved ? resolveComponentFile(resolved, repoRoot) : null;
+                const target = asComponentFile(resolveModuleFile(spec, absFile, repoRoot, srcDirRel));
                 if (target)
                     targets.add(target);
             }
@@ -154,6 +181,7 @@ export function buildComponentGraph(repoRoot, srcDirRel, sfcFilesAbs, auto) {
     const externalTags = {};
     const importedBy = {};
     const dynamicComponents = [];
+    const eventBindings = {};
     let edgeCount = 0;
     let externalTagCount = 0;
     for (const abs of sfcFilesAbs) {
@@ -166,22 +194,43 @@ export function buildComponentGraph(repoRoot, srcDirRel, sfcFilesAbs, auto) {
         const imports = staticImports(parts.script, abs, repoRoot, srcDirRel);
         const edgeMap = new Map();
         const external = new Set();
-        for (const tag of collectTemplateTags(parts.template)) {
+        const bindings = [];
+        for (const el of collectTemplateElements(parts.template)) {
+            const tag = el.tag;
             if (NATIVE_TAGS.has(tag.toLowerCase()))
                 continue;
+            let child = null;
             const imported = imports.get(tag) ?? imports.get(pascalize(tag));
             if (imported) {
                 edgeMap.set(imported.target, "import");
+                child = imported.target;
+            }
+            else {
+                // 源码里没有 import 语句的，走自动导入清单
+                const autoResolved = auto.byName.get(tag) ?? auto.byName.get(pascalize(tag));
+                if (autoResolved) {
+                    edgeMap.set(autoResolved, "auto");
+                    child = autoResolved;
+                }
+            }
+            if (!child) {
+                external.add(tag);
                 continue;
             }
-            // 源码里没有 import 语句的，走自动导入清单
-            const autoResolved = auto.byName.get(tag) ?? auto.byName.get(pascalize(tag));
-            if (autoResolved) {
-                edgeMap.set(autoResolved, "auto");
-                continue;
+            // 只对**能解析到本仓组件**的标签记事件绑定 ——
+            // 原生元素上的 @click 不算组件事件，记了只是噪音
+            for (const b of el.bindings) {
+                bindings.push({
+                    child,
+                    event: b.event,
+                    handler: b.handler,
+                    line: b.line + parts.templateLineOffset,
+                    via: b.via,
+                });
             }
-            external.add(tag);
         }
+        if (bindings.length > 0)
+            eventBindings[rel] = bindings;
         // 动态 import 的组件即使模板看不到也要算进来
         for (const target of asyncVueImports(parts.script, abs, repoRoot, srcDirRel)) {
             if (!edgeMap.has(target))
@@ -216,6 +265,7 @@ export function buildComponentGraph(repoRoot, srcDirRel, sfcFilesAbs, auto) {
         externalTags,
         importedBy,
         dynamicComponents: dynamicComponents.sort(),
+        eventBindings,
         autoImportSource: auto.source,
         stats: { sfcCount: sfcFilesAbs.length, edgeCount, externalTagCount },
     };

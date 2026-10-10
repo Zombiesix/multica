@@ -24,6 +24,9 @@ export const DEFAULT_IGNORED_FILES: RegExp[] = [
   /^\.env/, // 环境变量，可能含密钥
   /\.log$/,
   /\.zip$/,
+  // 压缩过的第三方库（如 src/utils/insurance/insurance.es.min.js）——
+  // 不是人写的源码，扫出来的 key/端点全是噪音
+  /\.min\.(js|css)$/,
 ];
 
 export interface WalkResult {

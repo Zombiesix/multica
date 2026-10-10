@@ -18,6 +18,30 @@ export interface Endpoint {
 }
 
 /**
+ * 一个导出函数没解析出端点的**原因**。
+ *
+ * 关键是别把原因丢掉：过去这里只留函数名数组，消费方（scripts/recon.mjs）只好
+ * 用自然语言重新猜原因。原因分类必须由生产者带上，消费方才能分流处理。
+ */
+export type UnresolvedReason =
+  /** 函数体里压根没有客户端调用 —— 大概率是纯工具函数（日期计算之类），不是提取失败 */
+  | "no-client-usage"
+  /** 有 `client.method(...)` 调用，但 URL 不是字面量（变量 / 常量 / 拼接）—— 常量解析能救一部分 */
+  | "unresolved-url"
+  /** 调用了客户端但不是 `<client>.<method>(url)` 形态（解构后直调 / 二次封装 / config object） */
+  | "unsupported-call-form";
+
+export interface UnresolvedFn {
+  /** api 函数名 */
+  fn: string;
+  reason: UnresolvedReason;
+  /** 命中的调用形态，如 `$http.get(<非字面量>)`，供人工判断 */
+  calls: string[];
+  /** 文件:行 —— 函数声明处，必填 */
+  evidence: string[];
+}
+
+/**
  * 把模块引用的 api 函数（形如 "catheter/queryList"）对回真实端点。
  * CLI 与 UI 共用，避免两边逻辑漂移。
  */

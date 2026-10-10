@@ -22,6 +22,9 @@ export const DEFAULT_IGNORED_FILES = [
     /^\.env/, // 环境变量，可能含密钥
     /\.log$/,
     /\.zip$/,
+    // 压缩过的第三方库（如 src/utils/insurance/insurance.es.min.js）——
+    // 不是人写的源码，扫出来的 key/端点全是噪音
+    /\.min\.(js|css)$/,
 ];
 /**
  * 递归遍历。符号链接一律不跟随——dirent 对 symlink 的 isDirectory() 为 false，

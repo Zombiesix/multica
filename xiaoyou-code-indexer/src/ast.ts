@@ -12,28 +12,48 @@ export interface ScriptSource {
 export interface SfcParts {
   script: ScriptSource | null;
   template: string | null;
+  /** template 内容在原文件中的起始行（1-based 偏移量），用于把模板内行号还原到原文件 */
+  templateLineOffset: number;
 }
+
+/**
+ * 进程内缓存。6 个抽取器（组件图 / 端点 / store / 权限 / 存储 / WS）都要读同一批文件，
+ * 不做缓存的话每个文件会被读盘 + 解析 6~10 次 —— 实测 nurse-manager 扫描要 9.6s，
+ * 缓存后能压回 1s 量级。扫描进程短命，内存换时间很划算。
+ */
+const partsCache = new Map<string, SfcParts>();
+const sourceCache = new Map<string, ts.SourceFile>();
 
 /** 一次解析拿到 script 与 template 两段；非 .vue 只返回 script */
 export function readSfcParts(absFile: string): SfcParts {
+  const hit = partsCache.get(absFile);
+  if (hit) return hit;
+
+  const parts = readSfcPartsUncached(absFile);
+  partsCache.set(absFile, parts);
+  return parts;
+}
+
+function readSfcPartsUncached(absFile: string): SfcParts {
   let raw: string;
   try {
     raw = fs.readFileSync(absFile, "utf8");
   } catch {
-    return { script: null, template: null };
+    return { script: null, template: null, templateLineOffset: 0 };
   }
 
   if (path.extname(absFile).toLowerCase() !== ".vue") {
-    return { script: { code: raw, lineOffset: 0 }, template: null };
+    return { script: { code: raw, lineOffset: 0 }, template: null, templateLineOffset: 0 };
   }
 
   const { descriptor, errors } = parseSfc(raw, { filename: absFile });
-  if (errors.length > 0) return { script: null, template: null };
+  if (errors.length > 0) return { script: null, template: null, templateLineOffset: 0 };
 
   const block = descriptor.scriptSetup ?? descriptor.script;
   return {
     script: block ? { code: block.content, lineOffset: block.loc.start.line - 1 } : null,
     template: descriptor.template?.content ?? null,
+    templateLineOffset: descriptor.template ? descriptor.template.loc.start.line - 1 : 0,
   };
 }
 
@@ -42,8 +62,19 @@ export function readScript(absFile: string): ScriptSource | null {
   return readSfcParts(absFile).script;
 }
 
+/** 同一 fileName 复用同一个 SourceFile —— 节点身份一致，调用方可以安全做引用比较 */
 export function createSource(code: string, fileName: string): ts.SourceFile {
-  return ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const hit = sourceCache.get(fileName);
+  if (hit) return hit;
+
+  const sf = ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  sourceCache.set(fileName, sf);
+  return sf;
+}
+
+export function clearSourceCache(): void {
+  partsCache.clear();
+  sourceCache.clear();
 }
 
 function keyNameOf(name: ts.PropertyName): string | null {
@@ -98,32 +129,24 @@ export function dynamicImportSpecifier(node: ts.Node | undefined): string | null
   let call: ts.Node = node;
   if (ts.isArrowFunction(node)) call = node.body;
   if (ts.isParenthesizedExpression(call)) call = call.expression;
+
+  // `import("x").catch(err => ErrorComponent(err))` —— 懒加载兜底的常见写法。
+  // 不剥掉这层的话，nurse-manager 整仓 123 条路由全都解析不出组件。
+  if (ts.isCallExpression(call) && ts.isPropertyAccessExpression(call.expression)) {
+    const inner = call.expression.expression;
+    if (ts.isCallExpression(inner) && inner.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      return stringValue(inner.arguments[0]);
+    }
+  }
+
   if (!ts.isCallExpression(call)) return null;
   if (call.expression.kind !== ts.SyntaxKind.ImportKeyword) return null;
   return stringValue(call.arguments[0]);
 }
 
-/**
- * 把 `@/xxx` 别名或相对路径还原成 repo 相对路径（正斜杠）。
- * 裸模块名（第三方包）返回 null。
- */
-export function resolveSpecifier(
-  spec: string,
-  fromFileAbs: string,
-  repoRoot: string,
-  srcDirRel: string | null,
-): string | null {
-  let abs: string;
-  if (spec.startsWith("@/")) {
-    const base = srcDirRel ? path.join(repoRoot, srcDirRel) : repoRoot;
-    abs = path.join(base, spec.slice(2));
-  } else if (spec.startsWith(".")) {
-    abs = path.resolve(path.dirname(fromFileAbs), spec);
-  } else {
-    return null;
-  }
-  return path.relative(repoRoot, abs).split(path.sep).join("/");
-}
+// 模块解析已独立到 resolve.ts（别名读真实配置 + 文件解析）。
+// 这里 re-export 保持既有 import 路径不变。
+export { resolveSpecifier, resolveModuleFile } from "./resolve";
 
 /** 遍历所有 ImportDeclaration，回调 (模块说明符, 导入名列表, 该声明所在行) */
 export function forEachImport(

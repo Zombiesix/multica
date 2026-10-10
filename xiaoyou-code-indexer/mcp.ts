@@ -2,7 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { clearScanCache, getScan } from "./src/cache";
-import { projectOverview, traceFlow, listWarnings, searchIndex } from "./src/query";
+import {
+  projectOverview,
+  traceFlow,
+  traceEvent,
+  traceState,
+  channelsSummary,
+  moduleGraphView,
+  listWarnings,
+  searchIndex,
+} from "./src/query";
 
 /**
  * stdio MCP server。目标仓路径由 CLI 参数固定（v1 单 server 单仓），
@@ -30,6 +39,60 @@ export function serve(repoPath: string): void {
       inputSchema: { target: z.string().describe("route path or module name") },
     },
     async args => ({ content: [{ type: "text", text: traceFlow(getScan(repoPath), args.target) }] }),
+  );
+
+  server.registerTool(
+    "trace_event",
+    {
+      description:
+        "Trace one component event: who emits it (declaration style + emit call sites), who listens (@event handler on the parent), and what the handler does (API calls / store actions / route changes). Use when explaining an interaction flow — the render tree only covers parent->child, this covers child->parent.",
+      inputSchema: {
+        component: z.string().describe("component name or path fragment, e.g. BasicDrawer"),
+        event: z.string().describe("event name, kebab-case or camelCase"),
+      },
+    },
+    async args => ({
+      content: [{ type: "text", text: traceEvent(getScan(repoPath), args.component, args.event) }],
+    }),
+  );
+
+  server.registerTool(
+    "trace_state",
+    {
+      description:
+        "Trace a Pinia store field: who reads it and who writes it (file:line + enclosing function). Answers 'who changes this state'. Pass 'storeId' or 'storeId.field'.",
+      inputSchema: {
+        target: z.string().describe("store id, optionally with a field: 'user' or 'user.authorization'"),
+      },
+    },
+    async args => ({ content: [{ type: "text", text: traceState(getScan(repoPath), args.target) }] }),
+  );
+
+  server.registerTool(
+    "list_channels",
+    {
+      description:
+        "State & event channels of the repo: stores, component events (child->parent), permission codes, router guards, storage keys, websockets. Pass kind to narrow down.",
+      inputSchema: {
+        kind: z
+          .string()
+          .optional()
+          .describe("store | event | permission | guard | storage | ws"),
+      },
+    },
+    async args => ({ content: [{ type: "text", text: channelsSummary(getScan(repoPath), args.kind) }] }),
+  );
+
+  server.registerTool(
+    "list_module_graph",
+    {
+      description:
+        "Cross-module relations: which module references which (component usage), which modules depend on shared component dirs, which stores are shared across modules, shared API domains, cross-module events. Pass a module name to see only its dependencies.",
+      inputSchema: {
+        module: z.string().optional().describe("module name; omit for the whole graph"),
+      },
+    },
+    async args => ({ content: [{ type: "text", text: moduleGraphView(getScan(repoPath), args.module) }] }),
   );
 
   server.registerTool(

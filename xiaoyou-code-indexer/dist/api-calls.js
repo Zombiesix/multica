@@ -3,6 +3,7 @@ import path from "node:path";
 import { collectExports, createSource, forEachImport, readScript, resolveSpecifier, } from "./ast";
 import { extractEndpoints } from "./endpoints";
 import { dirExists, toRepoRel, walk } from "./ignore";
+import { resolveModuleFile } from "./resolve";
 const CODE_EXT = new Set([".ts", ".js", ".tsx", ".jsx", ".vue"]);
 function isCode(f) {
     return CODE_EXT.has(path.extname(f).toLowerCase());
@@ -14,12 +15,18 @@ export function buildApiIndex(repoRoot, serviceDirRel, srcDirRel) {
     const apiSubAbs = path.join(serviceAbs, "api");
     const rootAbs = dirExists(apiSubAbs) ? apiSubAbs : serviceAbs;
     const rootRel = toRepoRel(repoRoot, rootAbs);
-    // 共享层 = 服务层根下的直接文件（如 $http.ts） + api 根下的直接文件。
-    // $http.ts 在 api/ 的上一层，是链路追踪的关键节点，不能漏。
-    const sharedFiles = [...new Set([...walk(serviceAbs).files, ...walk(rootAbs).files]
-            .filter(isCode)
+    // 共享层 = 服务层根下的代码文件，但**排除 api 域目录内部**。
+    // 这样 $http.ts（service 根）、instance/index.ts、request/config.ts（嵌套目录）
+    // 都算共享层 —— 过去只收「直接文件」，导致目录导入的客户端（@/service/instance）
+    // 识别不出来，整个仓的端点静默归零。
+    // 没有 api/ 子目录时退回旧口径（只收 service 根下的直接文件）。
+    const hasApiSubdir = rootAbs !== serviceAbs;
+    const sharedFiles = [...new Set(walk(serviceAbs)
+            .files.filter(isCode)
             .map(f => toRepoRel(repoRoot, f))
-            .filter(rel => !rel.slice(serviceDirRel.length + 1).includes("/")))].sort();
+            .filter(rel => hasApiSubdir
+            ? !rel.startsWith(`${rootRel}/`)
+            : !rel.slice(serviceDirRel.length + 1).includes("/")))].sort();
     let entries = [];
     try {
         entries = fs.readdirSync(rootAbs, { withFileTypes: true });
@@ -27,19 +34,68 @@ export function buildApiIndex(repoRoot, serviceDirRel, srcDirRel) {
     catch {
         entries = [];
     }
-    const clientFiles = new Set(sharedFiles);
-    const domains = [];
+    // 先把「域 → 文件清单」摊开：后面既要用它推客户端，也要用它抽端点
+    const descs = [];
     for (const e of entries) {
-        if (!e.isDirectory() || e.isSymbolicLink())
+        if (e.isSymbolicLink())
             continue;
-        const dirAbs = path.join(rootAbs, e.name);
-        const files = walk(dirAbs)
-            .files.filter(isCode)
-            .map(f => toRepoRel(repoRoot, f))
-            .sort();
+        // api 域有两种形态：**目录**（icis / cssd-ui / nurse-manager）和
+        // **单文件**（haimis 的 api/common.ts、cssd-ui-mobile 的 api/*.ts）。
+        // 过去只认目录，haimis 整仓解析出 0 个域。
+        if (e.isDirectory()) {
+            const dirAbs = path.join(rootAbs, e.name);
+            descs.push({
+                name: e.name,
+                dir: toRepoRel(repoRoot, dirAbs),
+                files: walk(dirAbs)
+                    .files.filter(isCode)
+                    .map(f => toRepoRel(repoRoot, f))
+                    .sort(),
+            });
+            continue;
+        }
+        if (e.isFile() && isCode(e.name)) {
+            const base = e.name.replace(/\.[^.]+$/, "");
+            if (base === "index")
+                continue; // 域根下的 index 是聚合入口，不是域
+            const rel = toRepoRel(repoRoot, path.join(rootAbs, e.name));
+            descs.push({ name: base, dir: rel, files: [rel] });
+        }
+    }
+    // 内容式客户端识别：域文件 import 的、位于 api 域目录之外的模块，
+    // 只要内容里调了 `axios.create(` 就算 http 客户端。
+    // 不按路径也不按名字猜 —— cssd-ui-mobile 的客户端在 `src/utils/request`，
+    // 根本不在 service 根下，按路径识别永远找不到。
+    const outsideImports = new Set();
+    for (const d of descs) {
+        for (const rel of d.files) {
+            const abs = path.join(repoRoot, rel);
+            const script = readScript(abs);
+            if (!script)
+                continue;
+            forEachImport(createSource(script.code, rel), spec => {
+                const resolved = resolveModuleFile(spec, abs, repoRoot, srcDirRel);
+                if (!resolved || resolved.startsWith(`${rootRel}/`))
+                    return;
+                outsideImports.add(resolved);
+            });
+        }
+    }
+    const contentClients = [...outsideImports].filter(rel => {
+        try {
+            return /axios\s*\.\s*create\s*\(/.test(fs.readFileSync(path.join(repoRoot, rel), "utf8"));
+        }
+        catch {
+            return false;
+        }
+    });
+    const clientFiles = new Set([...sharedFiles, ...contentClients]);
+    const domains = [];
+    for (const { name, dir: dirRel, files } of descs) {
         const funcs = new Set();
         const endpoints = [];
-        const unresolved = new Set();
+        // 按函数名去重，保留首次出现的 reason/evidence
+        const unresolved = new Map();
         for (const rel of files) {
             const abs = path.join(repoRoot, rel);
             const script = readScript(abs);
@@ -49,16 +105,20 @@ export function buildApiIndex(repoRoot, serviceDirRel, srcDirRel) {
                 funcs.add(n);
             const extracted = extractEndpoints(script, abs, repoRoot, srcDirRel, clientFiles);
             endpoints.push(...extracted.endpoints);
-            for (const n of extracted.nonEndpointFns)
-                unresolved.add(n);
+            for (const u of extracted.unresolvedFns) {
+                if (!unresolved.has(u.fn))
+                    unresolved.set(u.fn, u);
+            }
         }
+        const unresolvedFns = [...unresolved.values()].sort((a, b) => a.reason.localeCompare(b.reason) || a.fn.localeCompare(b.fn));
         domains.push({
-            name: e.name,
-            dir: toRepoRel(repoRoot, dirAbs),
+            name,
+            dir: dirRel,
             files,
             functions: [...funcs].sort(),
             endpoints: endpoints.sort((a, b) => a.fn.localeCompare(b.fn) || a.url.localeCompare(b.url)),
-            nonEndpointFns: [...unresolved].sort(),
+            unresolvedFns,
+            nonEndpointFns: unresolvedFns.map(u => u.fn),
             usedByModules: [],
         });
     }
