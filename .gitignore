@@ -1,8 +1,15 @@
-swagger-mcp-server/node_modules
 test
 archive
-docs/requirements/R-*
-get-plan/plans/*
 node_modules/
+
+# 多 Agent 执行过程文成
+docs/requirements/R-*
+
+# 协作平台账号，通过 ensure-auth.mjs 生成
 .teamwork/auth.txt
+
+# hindsight 配置的模型，通过 ensure-hindsight-env.mjs 生成
 scripts/*.env
+
+# 助手层按目标仓生成的时点快照(可再生:yarn assistant:map gitlab/<仓>)
+docs/assistant/
