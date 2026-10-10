@@ -52,10 +52,8 @@
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden fade-in">
       <header class="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-200">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">📋 本周已完成</span>
+          <span id="weekTitle" class="text-sm font-semibold">📋 本周已完成</span>
           <select id="weekUserSelect" class="text-sm px-2 py-1 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"></select>
-          <span class="text-sm font-semibold">· 最近周五至今</span>
-          <span id="weekTime" class="text-xs text-slate-400"></span>
         </div>
       </header>
       <div id="weekBody" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"></div>
@@ -373,6 +371,10 @@
       const body = document.getElementById('weekBody');
       const mods = weekDataFor(currentUser);
       wrap.classList.toggle('hidden', false);
+      const range = state.weekRange;
+      document.getElementById('weekTitle').textContent = range && range.startVal
+        ? `📋 ${range.startVal} ~ ${range.endVal} · 共 ${range.total} 条`
+        : '📋 本周已完成';
       body.innerHTML = mods.length ? mods.map((m, mi) => {
         const { feats, fixs } = moduleAggregate(m);
         return `
@@ -459,8 +461,8 @@
         if (!res.ok || !data.ok) throw new Error(data.error || ('HTTP ' + res.status));
         state.currentWeekByUser = state.currentWeekByUser || {};
         state.currentWeekByUser[currentUser] = data.modules || [];
+        state.weekRange = { startVal: data.startVal, endVal: data.endVal, total: data.total };
         save();
-        document.getElementById('weekTime').textContent = `${data.startVal} ~ ${data.endVal} · 共 ${data.total} 条`;
         alert(`已更新：共 ${data.total} 条已完成任务，分属 ${data.modules.length} 个项目`);
       } catch (e) {
         alert('一键更新失败：' + e.message + '\n若为鉴权/网络问题，请更新 server.js 顶部的 TW_COOKIE。');
@@ -480,6 +482,7 @@
       });
       state.currentWeekFinished = [];
       state.currentWeekByUser = {};
+      state.weekRange = null;
       save();
       showToast('已重置');
     }

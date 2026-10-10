@@ -103,11 +103,26 @@ async function tableRequest(startVal, endVal, username) {
   return json;
 }
 
+// om/docs 下最晚日报日期的当天最后一秒（如 2026-10-09 23:59:59）；无日报时回退到最近一次周五 00:00
+function latestDocStart() {
+  const docsDir = path.join(__dirname, 'docs');
+  let dates = [];
+  try {
+    dates = fs.readdirSync(docsDir)
+      .map(f => (f.match(/^(\d{4}-\d{2}-\d{2})\.md$/) || [])[1])
+      .filter(Boolean);
+  } catch { /* 目录不存在则走回退 */ }
+  if (!dates.length) return lastThursday();
+  dates.sort();
+  const [y, m, d] = dates[dates.length - 1].split('-').map(Number);
+  const dt = new Date(y, m - 1, d, 23, 59, 59);
+  return dt;
+}
+
 async function fetchCurrentWeek(username) {
-  const startVal = fmt(lastThursday());
+  const startVal = fmt(latestDocStart());
   const endVal = fmt(new Date());
   let json = await tableRequest(startVal, endVal, username);
-  console.log("===========json", json);
   if (json && json.result === 'NO_LOGIN') {
     await reLogin();
     json = await tableRequest(startVal, endVal, username);
