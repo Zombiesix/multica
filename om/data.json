@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-10T01:25:23.175Z",
+  "updatedAt": "2026-10-10T01:48:13.788Z",
   "projects": [
     {
       "id": "p-1",
@@ -17,33 +17,48 @@
       "name": "iHO-护理系统",
       "statusText": "代码已合、其它人发",
       "packaged": "doing",
-      "version": "4.9.4",
+      "version": "4.10.1",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     },
     {
       "id": "p-3",
       "name": "iHO-不良事件上报",
       "statusText": "没有修改",
       "packaged": "doing",
-      "version": "4.9.4",
+      "version": "4.10.1",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     },
     {
       "id": "p-4",
       "name": "护理大屏",
       "statusText": "没有修改",
       "packaged": "doing",
-      "version": "4.9.4",
+      "version": "4.10.1",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     },
     {
       "id": "p-5",
@@ -94,44 +109,64 @@
       "name": "iHO-病案管理",
       "statusText": "分支整好了，master、dev、dev-zjb",
       "packaged": "doing",
-      "version": "4.9.2",
+      "version": "5.1.12",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     },
     {
       "id": "p-11",
       "name": "iHO-院感管理系统",
       "statusText": "分支整好了，master、dev、dev-zjb",
       "packaged": "doing",
-      "version": "4.9.2",
+      "version": "4.9.4",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     },
     {
       "id": "p-12",
       "name": "iHO-医技工作站",
       "statusText": "分支整好了，master、dev、dev-zjb",
       "packaged": "doing",
-      "version": "4.9.2",
+      "version": "5.1.12",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     },
     {
       "id": "p-13",
       "name": "iHO-患者健康档案",
       "statusText": "分支整好了，master、dev、dev-zjb",
       "packaged": "doing",
-      "version": "4.9.2",
+      "version": "5.1.12",
       "remark": "",
       "features": "",
       "fixes": "",
-      "fxByUser": {}
+      "fxByUser": {
+        "张九波": {
+          "features": "",
+          "fixes": ""
+        }
+      }
     }
   ],
   "currentWeekFinished": [],
