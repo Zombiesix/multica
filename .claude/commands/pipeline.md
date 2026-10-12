@@ -29,9 +29,10 @@
 由 skill 完成脚手架：
 
 - 抽字段 → 定别名 `R-<任务ID后6位>`
-- 查 `project-map.md` 定**目标仓库**（**基准分支：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`**，非 master）
-- **开工门禁（必须先过，不过就停）**：校验主仓 `gitlab/<仓库>` ① 当前分支 == 固定分支，② `git status --porcelain` 为空。
-  不满足 = 上一个需求的改动还没提交 → 停下来让张三先在 ⑤ 步 deploy 或人工提交，**绝不允许带着脏工作区开工**（这是替代 worktree 的隔离手段，见 done「收尾边界铁律」）。
+- 查 `project-map.md` 定**目标仓库**（**基准分支**：读 `febot.config.json` 的 `branches.default`，默认 `dev`，非 master）
+- **开工门禁（必须先过，不过就停）**：校验主仓 `<repoRoot>/<仓库>` ① 当前分支 == `branches.default`，② `git status --porcelain` 为空。
+  （`<repoRoot>` = `febot.config.json` 的 `repoRoot`，默认 `./gitlab`。）
+  不满足 = 上一个需求的改动还没提交 → 停下来让负责人先在 ⑤ 步 deploy 或人工提交，**绝不允许带着脏工作区开工**（见 done「收尾边界铁律」）。
 - 拷 `_template/` → 填 `context.md`（把 **需求标题 + 一句需求描述** 放最顶）、`tasks.md`、`decisions.md`(tier)、`state.json`(phase=planning 或 coding)
 - 需求标题与一句需求描述进了 context.md 顶部，planner 据此快速理解，plan.md 生成更快更准
   已接入则跳过，直接读 `state.json` 定下一步。
@@ -43,7 +44,7 @@
 
 记忆增强（init 喂食后执行）：
 ```
-python scripts/hindsight-memo.py recall --bank multica-project --query "<需求标题+产品/模块>" --budget 500 --out docs/requirements/<别名>/recall-history.md
+python scripts/hindsight-memo.py recall --bank febot-project --query "<需求标题+产品/模块>" --budget 500 --out docs/requirements/<别名>/recall-history.md
 python scripts/hindsight-memo.py recall --bank <产品线bank> --query "<需求标题>" --budget 800 --out docs/requirements/<别名>/recall-history-line.md
 若以上文件非空，把命中摘要以「## 历史参考（Hindsight）」小节追加进 context.md 末尾（注明来源需求ID）；为空则删除这两个文件。
 ```
@@ -77,13 +78,13 @@ python scripts/hindsight-memo.py recall --bank li-expertise --query "<本需求�
 返回:只一行摘要(plan.md 路径 + 问题数)
 ```
 
-### plan_confirm → 主对话 + 张三
+### plan_confirm → 主对话 + 负责人
 
-读 questions.md 展示 → 张三答 answers.md(按编号) → 确认拍板写 decisions.md(时间/决策/拍板人/原因)。
+读 questions.md 展示 → 负责人答 answers.md(按编号) → 确认拍板写 decisions.md(时间/决策/拍板人/原因)。
 
 拍板写入 decisions.md 后，**回流入库（关键回流点）**：只 retain **有理由的拍板**（决策 + 为什么）；纯确认类（"可以，就这样"）不入库。逐条执行（软降级，失败跳过）：
 ```
-python scripts/hindsight-memo.py retain --bank multica-project --content "<决策> 因为 <理由>" --context "R-<别名> decisions <Q号>"      # 全局件
+python scripts/hindsight-memo.py retain --bank febot-project --content "<决策> 因为 <理由>" --context "R-<别名> decisions <Q号>"      # 全局件
 python scripts/hindsight-memo.py retain --bank <产品线bank> --content "<决策> 因为 <理由>" --context "R-<别名> decisions <Q号>"    # 产品线件
 ```
 
@@ -108,7 +109,7 @@ python scripts/hindsight-memo.py recall --bank li-expertise --query "<本需求�
 
 ```
 请作为 reviewer 审查 A-001。
-- 读 git diff（**限定范围**：`git -C gitlab/<仓库> diff -- <plan.md「将改动文件清单」里的文件>`）和 plan.md(含「将改动文件清单」)
+- 读 git diff（**限定范围**：`git -C <repoRoot>/<仓库> diff -- <plan.md「将改动文件清单」里的文件>`）和 plan.md(含「将改动文件清单」)
 - 对照 test-report.md 核验测试是否真实跑通
 - 可选读记忆: docs/requirements/A-001/recall-expertise.md（li-expertise 人工偏好；文件缺失/为空即无）
   对照命中偏好逐条标 符合/偏离(原因)，出 review.md「口味符合度」节；发现此前纠正过的问题再犯 → 标「重复问题」
@@ -144,16 +145,16 @@ python scripts/hindsight-memo.py retain --bank li-expertise --content "<人工�
 
 ### done → 主对话
 
-写 `worklog.md`、`state.json` 置 done → 收尾校验（见下）→ 张三在**主仓固定分支工作区**上人工测试验收（④步，dev server 直接跑，依赖与 `.env` 都现成）：
+写 `worklog.md`、`state.json` 置 done → 收尾校验（见下）→ 负责人在**主仓固定分支工作区**上人工测试验收（④步，dev server 直接跑，依赖与 `.env` 都现成）：
 
 复盘（一次性 reflect，**人工门禁**；软降级，失败跳过）：
 ```bash
 python scripts/hindsight-memo.py reflect --bank <产品线bank> --query "本需求(R-<别名>)实施中有哪些值得后续需求继承的经验和坑" --out docs/requirements/<别名>/reflect-line.md
 python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(R-<别名>)中人工否决或纠正了哪些方案，背后的偏好是什么" --out docs/requirements/<别名>/reflect-expertise.md
 ```
-把 reflect 摘要贴出来**给张三过目**；人工点头后，再把结论 retain 回库（`--context "R-<别名> 复盘"`）。**reflect 不自动入库**——防止 LLM 幻觉污染记忆；这与现状"人工只卡门禁"一致。
+把 reflect 摘要贴出来**给负责人过目**；人工点头后，再把结论 retain 回库（`--context "R-<别名> 复盘"`）。**reflect 不自动入库**——防止 LLM 幻觉污染记忆；这与现状"人工只卡门禁"一致。
 
-> **收尾边界（铁律，2026-10-12 修订：不再用 worktree）**：AgentTeam **直接在主仓固定分支工作区里改代码**，改动以**未提交**形式留在工作区，**不进行 add / commit / push 任何代码**。固定分支=仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master），主仓 checkout 常驻该分支。人工测试是总流程 ④ 步（**就在这个工作区上跑 dev server**，这是放弃 worktree 换来的：依赖、`.env`、后端代理、登录态全都现成）；提交、合并、推送、部署是 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成。AgentTeam 全程不触碰任何提交与远程写操作。
+> **收尾边界（铁律，2026-10-12 修订：不再用 worktree）**：AgentTeam **直接在主仓基准分支工作区里改代码**，改动以**未提交**形式留在工作区，**不进行 add / commit / push 任何代码**。基准分支= `febot.config.json` 的 `branches.default`（默认 `dev`，非 master），主仓 checkout 常驻该分支。人工测试是总流程 ④ 步（**就在这个工作区上跑 dev server**，这是放弃 worktree 换来的：依赖、`.env`、后端代理、登录态全都现成）；提交、合并、推送、部署是 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成。AgentTeam 全程不触碰任何提交与远程写操作。
 >
 > **隔离怎么保证（替代 worktree 的两条）**：
 > ① **开工门禁** —— init 阶段校验主仓在固定分支且工作区干净，脏就停（上一条需求必须已在 ⑤ 步提交掉）；
@@ -163,14 +164,14 @@ python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(
 1. 开工门禁已在 init 阶段校验（主仓在固定分支 + `git status --porcelain` 为空）。不满足就不开工，没有例外。
 2. coder 全程直接写主仓工作区，只改 plan.md「将改动文件清单」内的文件；不 `add`、不 `commit`、不 `stash`。
 3. 收尾校验（不通过就停下查，别往下走）：
-   - `git -C gitlab/<仓库> status --porcelain` —— **只应出现本需求清单内的改动**；出现清单外文件 → 写 orchestrator-log 并停下来问张三，不擅自清理别人的改动。
-   - `git -C gitlab/<仓库> diff --cached --name-only` —— **必须为空**（证明没有任何东西被暂存或提交）。
+   - `git -C <repoRoot>/<仓库> status --porcelain` —— **只应出现本需求清单内的改动**；出现清单外文件 → 写 orchestrator-log 并停下来问负责人，不擅自清理别人的改动。
+   - `git -C <repoRoot>/<仓库> diff --cached --name-only` —— **必须为空**（证明没有任何东西被暂存或提交）。
 4. 清 `file-lock.md` 中本需求条目。
 5. 删 init 时的计划临时文件（`rm -f xiaoqian-manager/data/temp/<启动时用的那个 md>`；任务ID流程可能已被 xiaoqian-manager 删过，rm -f 幂等；口头流程一定是主对话这里删）。
 
 ## 轨道约束
 
-- fail-safe：任何阶段拿不到预期产物 → 写 orchestrator-log 并停下来问张三，不硬猜继续。
+- fail-safe：任何阶段拿不到预期产物 → 写 orchestrator-log 并停下来问负责人，不硬猜继续。
 - orchestrator 每次收到 subagent 摘要后，把「下一步 + 已知信息」写 orchestrator-log.md 再丢弃对话。
 - **全局约束（对流水线主对话与所有 subagent 生效）**：
   1. **禁止更改 node / npm / yarn 版本**——不执行任何 `nvm use`、`node -v` 引发的变更、`npm`/`yarn`/`pnpm` 全局切换或 `engines`/`.nvmrc`/package.json 里的版本改动。版本锁定为现状。

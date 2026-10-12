@@ -12,8 +12,8 @@ function collectMeta(metaObj) {
     };
     if (!metaObj)
         return out;
-    // 中文业务名的字段名各仓不一：icis 用 `label`，nurse-manager 用 `title`，
-    // cssd-ui 用 `meta.name`。按这个优先级取，否则多数仓的路由都没有可读的业务名。
+    // 中文业务名的字段名各仓不一：example-sys 用 `label`，repo-b 用 `title`，
+    // repo-a 用 `meta.name`。按这个优先级取，否则多数仓的路由都没有可读的业务名。
     let label = null;
     let title = null;
     let metaName = null;
@@ -65,10 +65,10 @@ const MAX_ROUTE_DEPTH = 4;
  *
  * - `const routes = [{ path, component: () => import("@/..."), meta }]`
  * - `createRouter({ routes: [...] })` —— 数组直接内联在配置里
- * - `routes: [...constantRouter]` —— 数组来自别的模块，顺着 import 找过去（haimis 形态）
+ * - `routes: [...constantRouter]` —— 数组来自别的模块，顺着 import 找过去（repo-d 形态）
  * - 嵌套 `children` —— 递归展开，子路由相对路径拼到父路径上
  *
- * 过去只认第一种单文件写法，haimis 整仓解析出 0 条路由。
+ * 过去只认第一种单文件写法，repo-d 整仓解析出 0 条路由。
  */
 export function extractRoutes(routerFileAbs, repoRoot, srcDirRel) {
     const routes = [];
@@ -112,7 +112,7 @@ export function extractRoutes(routerFileAbs, repoRoot, srcDirRel) {
     };
     /**
      * 路由对象上方的行内注释，如 `//复印管理`。
-     * medical-record 的 24 条路由**没有任何 meta**，中文业务名只写在注释里 ——
+     * repo-g 的 24 条路由**没有任何 meta**，中文业务名只写在注释里 ——
      * 这是字面文本不是猜测，收进 extraMeta.comment 供导师层用。
      * 看起来像代码的注释（含 `:`/`(`/`=>`）一律丢弃，避免把注释掉的代码当业务名。
      */
@@ -166,7 +166,7 @@ export function extractRoutes(routerFileAbs, repoRoot, srcDirRel) {
         return null;
     };
     /**
-     * 展开一个路由数组。元素不一定是字面量 —— haimis 是 `[...constantRouter]`，
+     * 展开一个路由数组。元素不一定是字面量 —— repo-d 是 `[...constantRouter]`，
      * 数组本体在别的模块里，要顺着 import 找过去。
      */
     const walkArray = (arr, ownerFile, parentPath, depth) => {
@@ -252,7 +252,7 @@ export function extractRoutes(routerFileAbs, repoRoot, srcDirRel) {
     const sf = load(routerFileAbs);
     if (!sf)
         return { routes, unresolved, dynamicRoutes: false };
-    // 路由由 import.meta.glob 在运行时生成（aers-web 形态）—— 静态枚举不了，
+    // 路由由 import.meta.glob 在运行时生成（repo-h 形态）—— 静态枚举不了，
     // 必须**显式报出来**，否则调用方看到 routes=0 会以为"这个仓没有路由"。
     const dynamicRoutes = /import\s*\.\s*meta\s*\.\s*glob\s*\(/.test(sf.getFullText());
     let entry = null;

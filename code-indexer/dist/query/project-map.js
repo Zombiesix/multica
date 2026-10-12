@@ -23,7 +23,7 @@ export function projectOverview(map) {
         routes: map.routes.map(r => ({
             path: r.path,
             label: r.label,
-            // 没有 meta 业务名时，代码里的行内注释是唯一的中文线索（medical-record 形态）。
+            // 没有 meta 业务名时，代码里的行内注释是唯一的中文线索（repo-g 形态）。
             // 单独成字段，不冒充 label —— 消费方自己决定信不信。
             ...(r.extraMeta?.comment ? { comment: r.extraMeta.comment } : {}),
             module: moduleNameForRoute(map, r.path),

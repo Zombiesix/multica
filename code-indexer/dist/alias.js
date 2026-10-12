@@ -170,7 +170,7 @@ function readViteAliases(repoRoot) {
                         }
                         const target = replProp ? evalPathExpr(replProp.initializer, repoRoot) : null;
                         if (target === null) {
-                            // 实测 nurse-manager / nbs-web 的数组式只有 axios 去重，不是路径别名 —— 正常，不报噪音
+                            // 实测 repo-b / repo-c 的数组式只有 axios 去重，不是路径别名 —— 正常，不报噪音
                             continue;
                         }
                         entries.push({ prefix: prefixOf(key), target: normalizeTarget(repoRoot, target) });

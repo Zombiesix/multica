@@ -7,7 +7,7 @@ import { createLiteralResolver } from "./literals";
 /**
  * 存储通道：localStorage / sessionStorage / cookie。
  *
- * 实测这类 key 的业务信息量意外地大 —— medical-record 的
+ * 实测这类 key 的业务信息量意外地大 —— repo-g 的
  * `mrms/medical/dateType`、`mrms/copy/dateType`、`mrms/putawayManage/dateType`
  * 全是「记住这个页面上次选的日期口径」，是真实的业务行为，之前完全不可见。
  *
@@ -101,7 +101,7 @@ export function buildStorage(repoRoot: string, filesAbs: string[]): StorageKeyIn
     const lineOf = (n: ts.Node): number =>
       sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1 + script.lineOffset;
 
-    // 封装层判定要**沿整条祖先链**找导出声明：icis 的 use-storage.ts 把调用写在
+    // 封装层判定要**沿整条祖先链**找导出声明：example-sys 的 use-storage.ts 把调用写在
     // `export function useStorage()` 内部对象字面量的方法里，只看最近一层会漏。
     const wrapperOf = (n: ts.Node): string | null => {
       let cur: ts.Node | undefined = n;

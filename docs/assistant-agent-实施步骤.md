@@ -67,7 +67,7 @@
 ### 0.2 文件落点图
 
 ```
-multica/
+febot/
 ├─ .claude/
 │  ├─ skills/assistant/
 │  │  ├─ SKILL.md                    ← 入口剧本（P2）

@@ -1,4 +1,4 @@
-# multica × Hindsight 接入方案
+# febot × Hindsight 接入方案
 
 > 目标：在**不改变「文件即接口」核心不变式**的前提下，用 Hindsight 为 AgentTeam 流水线加上"学习型记忆"，
 > 解决"Agent 产出对不齐人工思想"的问题，逐步把人工拍板（decisions.md）、review 纠正、否决记录蒸馏成
@@ -19,7 +19,7 @@
 | 3   | `decisions.md` 只记录"拍板结果"，散落在各需求目录，**从未被消费**                          | 相同场景下 agent 推理和当初拍板不一致                          | done 阶段 retain 拍板理由进 bank，planning 时 recall（见 §4.4） |
 | 4   | planner/coder/reviewer 全是"一次性 subagent"，prompt 静态                                  | agent 不会随纠正变好，纠正记录随会话消亡                       | Mental Model 常驻知识页，subagent 启动即携带（见 §5.2）         |
 
-结论：multica 的文件流水线解决的是**过程可审计**，Hindsight 补的是**经验可学习**。两者正交，不冲突。
+结论：febot 的文件流水线解决的是**过程可审计**，Hindsight 补的是**经验可学习**。两者正交，不冲突。
 
 ---
 
@@ -31,7 +31,7 @@
                         │  API :8888   UI :9999   MCP /mcp/{bank_id}/    │
                         │                                                │
                         │  ┌─────────────┐ ┌─────────────┐ ┌──────────┐ │
-                        │  │li-expertise │ │multica-proj │ │iho-cssd… │ │
+                        │  │li-expertise │ │febot-proj │ │iho-cssd… │ │
                         │  │(人工思想库)  │ │(流水线知识库)│ │(产品线库) │ │
                         │  └─────────────┘ └─────────────┘ └──────────┘ │
                         └──────────────────────────────────────────────┘
@@ -58,12 +58,12 @@
 | bank_id                                                                           | 存什么                                                                                                                | 谁写入                                | 谁读取                |
 | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------------------- |
 | `li-expertise`                                                                    | 人工的评审标准、设计偏好、否决理由、"为什么不"                                                                        | orchestrator（done/修复后）+ 人工随手 | reviewer、planner     |
-| `multica-project`                                                                 | 流水线全局约束（node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则）、project-map 映射、历史拍板 | orchestrator（init/done）             | planner、orchestrator |
+| `febot-project`                                                                 | 流水线全局约束（node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则）、project-map 映射、历史拍板 | orchestrator（init/done）             | planner、orchestrator |
 | `<产品线>`（如 `iho-cssd-ui`、`reuseapp-blood-bank-web`、`iho-nurse-manager-ui`） | 该仓的架构约定、踩坑、API 域特点、历史需求决策摘要                                                                    | orchestrator（done）                  | planner、coder        |
 
 **bank 与现有文件的对应关系：**
 
-- `multica-project` ≈ README 门禁清单 + project-map.md 的**动态版**（README 是规则，bank 是"规则被应用的实例"）
+- `febot-project` ≈ README 门禁清单 + project-map.md 的**动态版**（README 是规则，bank 是"规则被应用的实例"）
 - `<产品线>` ≈ 小游导师 knowledge pages + 各需求 decisions.md 的**浓缩版**
 - `li-expertise` ≈ 目前**不存在对应物**——这就是"对不齐思想"的空洞，是本方案的核心产出
 
@@ -107,7 +107,7 @@ pipeline-feed 拷贝模板后，orchestrator 追加：
 
 ```
 记忆增强：
-- recall(bank_id=multica-project, query=<需求标题+产品/模块>, token_budget=500)
+- recall(bank_id=febot-project, query=<需求标题+产品/模块>, token_budget=500)
 - recall(bank_id=<产品线bank>, query=<需求标题>, token_budget=800)
 把命中的历史拍板/同类需求决策，以「历史参考」小节追加进 context.md 末尾
 （注明来源需求 ID；没有命中就什么都不写，禁止编造）
@@ -137,7 +137,7 @@ coder 保持现有"视野最小化"原则不动。它从 plan.md 的「历史参
 这是整个方案**最重要的 retain 时机**。人工答完 answers.md、写入 decisions.md 后，orchestrator 执行：
 
 ```
-retain(bank_id=multica-project 或 <产品线bank>,
+retain(bank_id=febot-project 或 <产品线bank>,
        content=<拍板决策 + 理由原文（decisions.md 条目）>,
        context="来源 R-013345 decisions.md Q2",
        timestamp=<now>)
@@ -239,7 +239,7 @@ reflect(bank_id=li-expertise, query="汇总近期所有否决与纠正记录，�
 
 **建议：Phase 1–2 用方案 B（脚本化、可审计），跑顺后 Phase 3 把 reviewer 切到方案 A（它需要最灵活的记忆访问）。**
 
-方案 B 脚本骨架（`scripts/hindsight-memo.py`，相对 multica 家）：
+方案 B 脚本骨架（`scripts/hindsight-memo.py`，相对 febot 家）：
 
 ```python
 #!/usr/bin/env python
@@ -326,7 +326,7 @@ if a.out:
 
 > **问题**：流水线的文件传递解决了"过程可审计"，但 agent 每个需求都从零开始，人工的纠正和拍板随会话消亡——这就是"对不齐思想"。
 >
-> **做法**：本机 Docker 起 Hindsight，建 `li-expertise`（人工思想库）/ `multica-project`（流水线知识）/ 各产品线三个层级的 bank；在 init/planning/decisions/review/done 五个剧本时点插入 recall（注入）与 retain（回流）；用 Mental Models 把"人工评审标准"固化为常驻知识页；每月 reflect 提炼、人工回写 reviewer rubric。
+> **做法**：本机 Docker 起 Hindsight，建 `li-expertise`（人工思想库）/ `febot-project`（流水线知识）/ 各产品线三个层级的 bank；在 init/planning/decisions/review/done 五个剧本时点插入 recall（注入）与 retain（回流）；用 Mental Models 把"人工评审标准"固化为常驻知识页；每月 reflect 提炼、人工回写 reviewer rubric。
 >
 > **纪律**：文件即接口不变；reflect 结果人工过目才入库；只记"为什么"不记"是什么"；coder 保持最小视野不直连记忆。
 >

@@ -46,7 +46,7 @@ node bin/cli.mjs <cmd> <repo> [...args]
 > `ModuleInfo.tree` 是**渲染树**（从入口组件展开）。跨模块关系走 `moduleGraph`。
 >
 > `pageDirs` 会收集**所有**存在的页面目录（`page`/`pages`/`view`/`views`）——
-> icis 同时有 `src/page` 与 `src/view`，只取第一个会让后者整片页面不属于任何模块。
+> 有的仓同时有 `src/page` 与 `src/view`，只取第一个会让后者整片页面不属于任何模块。
 
 ### 「说不清」的出口
 
@@ -66,9 +66,9 @@ node bin/cli.mjs <cmd> <repo> [...args]
     "xiaoyou-indexer": {
       "command": "node",
       "args": [
-        "D:/multica/code-indexer/bin/cli.mjs",
+        "<仓库根>/code-indexer/bin/cli.mjs",
         "serve",
-        "D:/multica/gitlab/<vue3-repo>"
+        "<repoRoot>/<vue3-repo>"
       ]
     }
   }

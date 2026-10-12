@@ -6,19 +6,16 @@
 
 ## 1. 背景与目标
 
-- 原配置位于项目级 `D:\multica\get-swagger\.mcp.json`，只有 4 个服务（nursing/icis/treat/cssd），且使用不带 `group` 参数的 `/v2/api-docs` 地址（已返回 404）。
-- swagger 网关要求使用分组参数，例如 `/v2/api-docs?group=defaultGroup`、`/v2/api-docs?group=3-护理计划（住院）`。
-- 目标：将 `swagger-multi` 转为当前电脑用户的**全局 MCP**，按分组正确配置所有服务。
+- swagger 网关通常要求带 `group` 参数，例如 `/v2/api-docs?group=defaultGroup`、`/v2/api-docs?group=1-第一组`；不带 `group` 的 `/v2/api-docs` 多数会 404。
+- 目标：把本仓安装的 `swagger-mcp-server` 注册成当前电脑用户的**全局 MCP**，按分组配好你要用的服务。
 
-## 2. 最终配置位置
+## 2. 怎么配（一条命令）
 
-全局 MCP 配置写入文件：
+1. `yarn setup` 会在 `swagger-mcp-server/` 下生成 `services.conf`（来自 `example/swagger-services.conf`）。
+2. 按注释填服务清单，一行一条 `服务名=api-docs 地址`。
+3. 跑 `bash swagger-mcp-server/update_global_mcp.sh`，它会 `claude mcp remove` 再 `claude mcp add --scope user swagger-multi`，服务名与地址全部取自 `services.conf`。
 
-```
-C:\Users\zhangjiubo\.claude.json
-```
-
-其结构（`mcpServers.swagger-multi`）：
+最终写入的是用户级配置文件 `%USERPROFILE%\.claude.json`（Windows）/ `~/.claude.json`，结构如下：
 
 ```json
 {
@@ -26,12 +23,9 @@ C:\Users\zhangjiubo\.claude.json
     "swagger-multi": {
       "command": "node",
       "args": [
-        "D:/multica/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/index.js",
-        "nursing-1-护理（住院）=http://192.168.1.211:9080/nursingswagger/v2/api-docs?group=1-%E6%8A%A4%E7%90%86%EF%BC%88%E4%BD%8F%E9%99%A2%EF%BC%89",
-        "...（其余 9 个 nursing 分组，共 10 个）",
-        "icis-default=http://192.168.1.211:9080/icisswagger/v2/api-docs?group=defaultGroup",
-        "treat-default=http://192.168.1.211:9080/treatswagger/v2/api-docs?group=defaultGroup",
-        "cssd-default=http://192.168.1.211:9080/cssdSwagger/v2/api-docs?group=defaultGroup"
+        "<仓库根>/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/index.js",
+        "example-a=http://your-swagger-host:9080/aswagger/v2/api-docs?group=defaultGroup",
+        "example-b=http://your-swagger-host:9080/bswagger/v2/api-docs?group=1-第一组"
       ]
     }
   }
@@ -40,38 +34,23 @@ C:\Users\zhangjiubo\.claude.json
 
 - **command**：`node`
 - **第一个 arg**：补丁版 MCP 服务器入口（本目录下安装的包）
-- **其余 13 个 arg**：`服务名=swagger文档URL`，URL 中的 `group` 值已做 URL 编码
+- **其余 arg**：`服务名=swagger文档URL`，数量与你 `services.conf` 的行数一致
 
-> 注意：不再使用 `npx -y @aike1202/swagger-mcp-server`，因为官方包存在解析 bug（见第 4 节），必须运行本地的补丁版。
+> 注意：不用 `npx -y @aike1202/swagger-mcp-server`，因为官方包存在解析 bug（见第 4 节），必须运行本地的补丁版。
 
-## 3. 服务与分组清单（共 13 个服务）
+## 3. 服务清单
 
-| 服务名                       | 分组                 | 说明                                  |
-| ---------------------------- | -------------------- | ------------------------------------- |
-| `nursing-1-护理（住院）`     | `1-护理（住院）`     | 住院护理                              |
-| `nursing-2-护理（急诊）`     | `2-护理（急诊）`     | 急诊护理                              |
-| `nursing-3-护理计划（住院）` | `3-护理计划（住院）` | 住院护理计划（含护理模板/诊断定义等） |
-| `nursing-4-护理计划（急诊）` | `4-护理计划（急诊）` | 急诊护理计划                          |
-| `nursing-5-护理管理（住院）` | `5-护理管理（住院）` | 住院护理管理                          |
-| `nursing-6-护理管理（急诊）` | `6-护理管理（急诊）` | 急诊护理管理                          |
-| `nursing-7-移动医护`         | `7-移动医护`         | 移动医护                              |
-| `nursing-8-护理大屏`         | `8-护理大屏`         | 护理大屏                              |
-| `nursing-报告卡`             | `报告卡`             | 报告卡                                |
-| `nursing-未分类`             | `未分类`             | 未分类接口                            |
-| `icis-default`               | `defaultGroup`       | 重症（ICU）系统，含 `/icis/*` 接口    |
-| `treat-default`              | `defaultGroup`       | 治疗系统                              |
-| `cssd-default`               | `defaultGroup`       | 消毒供应中心系统                      |
+服务名和分组完全由你团队的 swagger 网关决定，写在 `swagger-mcp-server/services.conf` 里（该文件不入库）。两个常见坑：
 
-nursing 分组来源（`http://192.168.1.211:9080/nursingswagger/swagger-resources`）：
-
-- 护理（住院）、护理（急诊）、护理计划（住院）、护理计划（急诊）、护理管理（住院）、护理管理（急诊）、移动医护、护理大屏、报告卡、未分类
+- **必须带 `group`**：先从网关的 `swagger-resources` 端点（如 `http://<host>:<port>/<app>swagger/swagger-resources`）拿到分组名，再拼 `/v2/api-docs?group=<分组名>`。
+- **地址里可能有中文**：`services.conf` 里写原文即可，脚本原样透传；URL 编码由 swagger 服务端处理。
 
 ## 4. 修复的 Bug（`@aike1202/swagger-mcp-server@1.2.0`）
 
 本地补丁安装在：
 
 ```
-D:\multica\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build\services\loader.js
+<仓库根>/swagger-mcp-server/node_modules/@aike1202/swagger-mcp-server/build/services/loader.js
 ```
 
 ### Bug 1：URL 解析截断（group 参数丢失）
@@ -106,9 +85,8 @@ D:\multica\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build\se
 
 ### 已验证
 
-- `nursing`（10 个分组）、`treat-default`、`cssd-default` 的文档均为合法 JSON，无需 Bug 2 修复。
-- 仅 `icis-default` 的文档存在 Bug 2 的问题。
-- 修复后 13 个服务的 `list_services` / `list_endpoints` / `get_endpoint_details` 全部测试通过。
+- 多数服务的文档是合法 JSON，无需 Bug 2 修复。
+- 少数服务（返回单引号数组 `example` 的那种）会踩 Bug 2，修复后 `list_services` / `list_endpoints` / `get_endpoint_details` 均正常。
 
 ## 5. 使用说明
 
@@ -123,27 +101,26 @@ D:\multica\swagger-mcp-server\node_modules\@aike1202\swagger-mcp-server\build\se
 | `get_schema` / `list_schemas`      | 获取/列出 schema                        |
 | `debug_endpoint` / `generate_curl` | 调试请求 / 生成 curl                    |
 
-示例服务名：`nursing-3-护理计划（住院）`、`icis-default`、`treat-default`、`cssd-default`。
+服务名就是你写在 `services.conf` 里的那个名字（`=` 左边的内容）。
 
-## 6. 接口示例：`POST /icis/nursing-template/import`
+## 6. 接口示例
 
-所在服务：`icis-default`（分组 `defaultGroup`）
+以某服务 `example-a`（分组 `defaultGroup`）下的 `POST /example/module/import` 为例：
 
 | 项       | 值                                                                               |
 | -------- | -------------------------------------------------------------------------------- |
-| 路径     | `/icis/nursing-template/import`                                                  |
+| 路径     | `/example/module/import`                                                         |
 | 方法     | POST                                                                             |
-| 接口名   | 护理模板导入                                                                     |
-| 描述     | 重症系统配置-护理单配置页签-导入                                                 |
+| 接口名   | 模块导入                                                                         |
 | 请求格式 | `multipart/form-data`                                                            |
 | 参数     | `file`（formData，文件类型，swagger 标注非必填）                                 |
 | 返回     | HTTP 200，`通用返回结果«object»`（含 code/data/msg/success/errorData/subErrors） |
 
-同分组相关路径（`/icis/nursing-template/*`）：`add`、`update`、`delete/{id}`、`list`、`list-by-department-id`、`searchPageByName`、`templateElements`、`getBckList`、`enableFlag`、`export`、`import`、`nursing-template-department/update-order`。
+同分组相关路径（`/example/module/*`）：`add`、`update`、`delete/{id}`、`list`、`searchPageByName`、`export`、`import`。
 
 ## 7. 维护注意事项
 
 - **补丁位于 `node_modules` 内**，若对该目录执行 `yarn`/`npm install` 重新安装 `@aike1202/swagger-mcp-server`，loader.js 的补丁会被覆盖，需要重新应用。可用 `patch-package` 固化补丁（`postinstall` 自动恢复）。
 - 官方包更新到修复该 bug 的新版本后，可改回 `npx -y @aike1202/swagger-mcp-server` 并删除本地补丁目录。
-- `update_global_mcp.sh` 记录了重建全局 MCP 配置的完整命令，可重复执行。
-- swagger 文档地址/分组可能随后端变更，变更后需同步更新 `.claude.json` 中的 URL。
+- `update_global_mcp.sh` 可重复执行：它按 `services.conf` 重建全局 MCP 配置。
+- swagger 地址/分组可能随后端变更，变更后改 `services.conf` 再跑一次脚本即可。

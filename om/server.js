@@ -6,15 +6,58 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const DATA_FILE = path.join(ROOT, 'data.json');
+// data.json 不入库（example/om-data.json 是模板），缺失时的空看板骨架
+const EMPTY_DATA = { updatedAt: null, projects: [], currentWeekByUser: {}, currentWeekFinished: [], weekRange: null };
 const DOCS_DIR = path.join(ROOT, 'docs');
 
+// ---- 配置：读仓库根的 febot.config.json（不入库，由 yarn setup 生成）----
+// 查找顺序：FEBOT_CONFIG → <om 上一级>/febot.config.json → <om>/febot.config.json → cwd/febot.config.json
+function loadConfig() {
+  const candidates = [
+    process.env.FEBOT_CONFIG ? path.resolve(process.env.FEBOT_CONFIG) : '',
+    path.join(ROOT, '..', 'febot.config.json'),
+    path.join(ROOT, 'febot.config.json'),
+    path.join(process.cwd(), 'febot.config.json'),
+  ].filter(Boolean);
+  for (const p of candidates) {
+    let raw;
+    try {
+      raw = fs.readFileSync(p, 'utf8');
+    } catch (e) {
+      if (e && e.code === 'ENOENT') continue;
+      console.warn(`[config] ${p} 读取失败，跳过：${e.message}`);
+      continue;
+    }
+    try {
+      const json = JSON.parse(raw);
+      if (json && typeof json === 'object' && !Array.isArray(json)) {
+        console.log(`[config] 已加载 ${p}`);
+        return json;
+      }
+      console.warn(`[config] ${p} 顶层不是对象，跳过`);
+    } catch (e) {
+      console.warn(`[config] ${p} 不是合法 JSON，跳过：${e.message}`);
+    }
+  }
+  console.warn('[config] 未找到 febot.config.json —— 请先跑 yarn setup 并填写 teamwork 段，否则「一键更新」不可用');
+  return {};
+}
+const CONFIG = loadConfig();
+const TW = (CONFIG.teamwork && typeof CONFIG.teamwork === 'object') ? CONFIG.teamwork : {};
+const str = v => (typeof v === 'string' ? v.trim() : '');
+
 // ---- teamwork 取数（cookie 过期时用 .teamwork/auth.txt 自动重新登录刷新）----
-const BASE = 'https://teamwork.cnhis.cc';
-const TW_API = `${BASE}/teamworkapi/tableReader/getTableData`;
-const TW_LOGIN = `${BASE}/teamworkapi/user/login`;
-const TW_USERNAME = '张九波';
+const BASE = str(TW.base);
+const TW_API_PATH = '/teamworkapi/tableReader/getTableData';
+const TW_LOGIN_PATH = '/teamworkapi/user/login';
+const TW_USERNAME = str(TW.username);
 const AUTH_FILE = path.join(ROOT, '..', '.teamwork', 'auth.txt');
-let TW_COOKIE = 'zb_sid=fac3c6bd-9d38-4e0e-a416-5b626fcba9bf; SESSION=ZmFjM2M2YmQtOWQzOC00ZTBlLWE0MTYtNWI2MjZmY2JhOWJm';
+let TW_COOKIE = str(TW.cookie);
+
+function baseUrl() {
+  if (!BASE) throw new Error('未配置协作平台地址：请在 febot.config.json 的 teamwork.base 填写');
+  return BASE;
+}
 
 const pad2 = n => String(n).padStart(2, '0');
 function fmt(dt) {
@@ -43,9 +86,9 @@ function buildBody(startVal, endVal, username) {
     'assessor_id', 'version', 'created_by', 'updated_by', 'id', 'updated_name', 'updated_time', 'assessor',
     'auditingdate', 'module_id'
   ]));
-  const autograph = 'AAAAnz2MBJQlN0IlMjJwYXJhbXMlMjIlM0ElNUIlN0IlMjJwX3ZhbHVlJTIyJTNBJTIyMiUyMiUyQyUyMnBfbmFtZSUyMiUzQSUyMm1hcmslMjIlN0QlMkMlN0IlMjJwX3ZhbHVlJTIyJTNBJTIyODAwJTIyJTJDJTIycF9uYW1lJTIyJTNBJTIyb3Blbl93aW5kb3dfd2lkdGglMjIlN0QlNUQlN0QAAAAAAAAAAA';
+  const autograph = str(TW.autograph);
   return [
-    'pageSize=50', 'page=1', 'tableId=1054970168284811264', `autograph=${autograph}`,
+    'pageSize=50', 'page=1', `tableId=${str(TW.tableId)}`, `autograph=${autograph}`,
     'conObj=', 'sqlExpression=', `qqConObj=${qqConObj}`, 'preConObj=%5B%5D', 'preSqlExpression=', 'keyword=',
     `fieldKeys=${fieldKeys}`, 'conditions=', 'mark=2', 'open_window_width=800', 'isDefault=-1',
     'order_field_setting=%5B%5D', 'asyncCount=0', 'source=quickSearch'
@@ -60,13 +103,13 @@ async function reLogin() {
     return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
   }));
   if (!cred.loginName || !cred.password || !cred.host) throw new Error('auth.txt 缺 loginName / password / host');
-  const resp = await fetch(TW_LOGIN, {
+  const resp = await fetch(baseUrl() + TW_LOGIN_PATH, {
     method: 'POST',
     headers: {
       'accept': 'application/json, text/plain, */*',
       'content-type': 'application/x-www-form-urlencoded',
-      'origin': BASE,
-      'referer': `${BASE}/`,
+      'origin': baseUrl(),
+      'referer': `${baseUrl()}/`,
       'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36'
     },
     body: new URLSearchParams(cred).toString()
@@ -84,19 +127,21 @@ async function reLogin() {
 }
 
 function reqHeaders() {
-  return {
+  const h = {
     'accept': 'application/json, text/plain, */*',
     'content-type': 'application/x-www-form-urlencoded',
     'cookie': TW_COOKIE,
-    'origin': BASE,
-    'referer': `${BASE}/`,
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
-    'user-tag': '141695'
+    'origin': baseUrl(),
+    'referer': `${baseUrl()}/`,
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36'
   };
+  const tag = str(TW.userTag);
+  if (tag) h['user-tag'] = tag;
+  return h;
 }
 
 async function tableRequest(startVal, endVal, username) {
-  const resp = await fetch(TW_API, { method: 'POST', headers: reqHeaders(), body: buildBody(startVal, endVal, username) });
+  const resp = await fetch(baseUrl() + TW_API_PATH, { method: 'POST', headers: reqHeaders(), body: buildBody(startVal, endVal, username) });
   const text = await resp.text();
   let json;
   try { json = JSON.parse(text); } catch { throw new Error(`teamwork 返回非 JSON，HTTP ${resp.status}: ${text.slice(0, 200)}`); }
@@ -120,6 +165,8 @@ function latestDocStart() {
 }
 
 async function fetchCurrentWeek(username) {
+  // 配置里没塞 cookie 就先登录一次，避免拿空 cookie 去撞平台拿回一个含糊的失败
+  if (!TW_COOKIE) await reLogin();
   const startVal = fmt(latestDocStart());
   const endVal = fmt(new Date());
   let json = await tableRequest(startVal, endVal, username);
@@ -261,10 +308,15 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/data') {
     if (req.method === 'GET') {
       try {
-        const raw = fs.readFileSync(DATA_FILE, 'utf8');
-        send(res, 200, raw);
+        send(res, 200, fs.readFileSync(DATA_FILE, 'utf8'));
       } catch (e) {
-        send(res, 500, JSON.stringify({ error: '读取 data.json 失败: ' + e.message }));
+        // data.json 不入库，新克隆的仓库里没有它 —— 返回空看板骨架而不是 500，
+        // 让前端能正常渲染空态、直接开始录入。
+        if (e && e.code === 'ENOENT') {
+          send(res, 200, JSON.stringify(EMPTY_DATA));
+        } else {
+          send(res, 500, JSON.stringify({ error: '读取 data.json 失败: ' + e.message }));
+        }
       }
       return;
     }
@@ -289,8 +341,21 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ---- 前端配置：负责人列表 + 默认负责人（来自 febot.config.json 的 teamwork 段）----
+  if (pathname === '/api/config' && req.method === 'GET') {
+    const users = Array.isArray(TW.users) ? TW.users.map(str).filter(Boolean) : [];
+    send(res, 200, JSON.stringify({ users, defaultUser: TW_USERNAME, hasBase: !!BASE }));
+    return;
+  }
+
   // ---- 一键更新：上周五至今的实际完成任务，按 module 分类 ----
   if (pathname === '/api/current-week' && req.method === 'GET') {
+    if (!TW_COOKIE && !fs.existsSync(AUTH_FILE)) {
+      send(res, 502, JSON.stringify({
+        error: '未配置协作平台凭据：请在 febot.config.json 的 teamwork 段填 base / cookie，或跑 yarn setup 生成 .teamwork/auth.txt（loginName / password / host）'
+      }));
+      return;
+    }
     const username = (url.searchParams.get('user') || '').trim() || TW_USERNAME;
     fetchCurrentWeek(username)
       .then(result => send(res, 200, JSON.stringify(result)))

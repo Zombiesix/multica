@@ -1,11 +1,11 @@
-# multica 前端研发流水线 × Hindsight 详细实施方案
+# febot 前端研发流水线 × Hindsight 详细实施方案
 
 > 把 Hindsight(0.7.x,自托管 MIT)接进这条 6 步前端研发流水线,让"人工的拍板、纠正、否决理由"沉淀为 Agent 可检索记忆,
 > 解决"Agent 每个需求从零开始、对不齐人工思想"的问题。
 >
 > 本方案是《[hindsight-接入方案.md](./hindsight-接入方案.md)》这份**策略文档**的**落地版**：精确到每条流水线步骤、每个 Agent 阶段改哪个文件、跑哪个命令、落哪张记忆。
 >
-> 依据当前现状：6 步总流程宿主 `xiaoqian-manager`(Next 16.3.7 + React 19,端口 3010)；`AgentTeam` 在 multica 家靠 `.claude/commands/pipeline.md` 剧本 + planner/coder/reviewer 三 subagent 跑 ②③。
+> 依据当前现状：6 步总流程宿主 `xiaoqian-manager`(Next 16.3.7 + React 19,端口 3010)；`AgentTeam` 在 febot 家靠 `.claude/commands/pipeline.md` 剧本 + planner/coder/reviewer 三 subagent 跑 ②③。
 
 ---
 
@@ -32,7 +32,7 @@
 │   API :8888    UI :9999    MCP /mcp/{bank_id}/                 │
 │                                                               │
 │   ┌─────────────┐ ┌─────────────┐ ┌────────────────────┐      │
-│   │li-expertise │ │multica-proj │ │<产品线>×N          │      │
+│   │li-expertise │ │febot-proj │ │<产品线>×N          │      │
 │   │(人工思想库)  │ │(流水线规矩) │ │(架构约定/踩坑/拍板) │      │
 │   └─────────────┘ └─────────────┘ └────────────────────┘      │
 │   存储: 内置 PostgreSQL + pgvector (volume: hindsight-data)   │
@@ -40,7 +40,7 @@
          ▲ retain/recall (REST :8888)             ▲ 抽取模型
          │                                         │ DeepSeek
 ┌────────┴─────────────────────────────────────────┴────────────┐
-│ ● multica 家 AgentTeam                                        │
+│ ● febot 家 AgentTeam                                        │
 │   pipeline.md 剧本 → scripts/hindsight-memo.py(封 REST)      │
 │   → 产物写在 context.md / plan.md / review.md / 复盘        │
 │                                                              │
@@ -108,11 +108,11 @@ HINDSIGHT_API_LLM_MODEL=deepseek-v4.1-flash
 | bank_id                             | 存什么                                                                                                                  | 谁写                                | 谁读                  |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------- |
 | `li-expertise`                      | 人工评审标准、设计偏好、否决理由、"为什么不"                                                                            | orchestrator(done/修复后)+ 人工随手 | reviewer、planner     |
-| `multica-project`                   | 流水线全局约束(node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则、**开工门禁/同仓串行**)、project-map 映射、历史全局拍板 | orchestrator(init/done)             | planner、orchestrator |
+| `febot-project`                   | 流水线全局约束(node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则、**开工门禁/同仓串行**)、project-map 映射、历史全局拍板 | orchestrator(init/done)             | planner、orchestrator |
 | `<产品线>`(按 project-map 实际件数) | 该仓架构约定、踩坑、API 域特点、历史需求决策摘要                                                                        | orchestrator(done)                  | planner、coder        |
 | `release-metrics`(⓪)                | 需求实际工时 vs 预估、发货状态                                                                                          | xiaoqian-manager(⑥)                 | planner(排期参考)     |
 
-**首期只建 3 个**(`li-expertise` / `multica-project` / 一个试点产品线如 `iho-cssd-ui`),跑通再加。
+**首期只建 3 个**(`li-expertise` / `febot-project` / 一个试点产品线如 `iho-cssd-ui`),跑通再加。
 
 ---
 
@@ -133,7 +133,7 @@ c.retain(bank_id='smoke-test', content='测试记忆'); print(c.recall(bank_id='
 
 # 3) 建 3 个 bank（用 UI :9999 或建库脚本，见 §8 scripts/ensure-banks.py）
 
-# 4) 预填充 multica-project 的"静态规矩"（**流程改动后跑 `--reseed` 覆盖，见 §8**）
+# 4) 预填充 febot-project 的"静态规矩"（**流程改动后跑 `--reseed` 覆盖，见 §8**）
 recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb 规则 / 开工门禁 —— 由 scripts/ensure-banks.py 的 STATIC_RULES 统一维护（按 marker 去重）
 ```
 
@@ -145,7 +145,7 @@ recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb
 
 ### ① 获取需求（xiaoqian 同步）◇
 
-- **做什么**：同步完成、任务落 `tasks.json` 后，用需求标题 + 产品/模块对 `multica-project` + `<产品线>` recall 一次,把命中摘要挂到任务卡上显示"历史同类 N 条"(不阻塞)。
+- **做什么**：同步完成、任务落 `tasks.json` 后，用需求标题 + 产品/模块对 `febot-project` + `<产品线>` recall 一次,把命中摘要挂到任务卡上显示"历史同类 N 条"(不阻塞)。
 - **改动**：`xiaoqian-manager/lib/server/hindsight/client.ts` 加 `recallForTask(title,module)`；`components/task/TaskRow.tsx` 渲染提示。
 - **目的**：小前端拿到任务就看到同类历史，省前期判断。
 
@@ -155,10 +155,10 @@ recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb
 
 | 阶段                                 | 做什么                                                                                                                                  | 落到哪个文件             | 触发命令                                                |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------- |
-| **init 喂食**                        | recall `multica-project`+`<产品线>`(查询=需求标题)，命中历史写进 `context.md` 末尾「历史参考」小节(注明来源需求ID,没命中不写)           | `context.md`             | `hindsight-memo.py recall --bank ... --out`             |
+| **init 喂食**                        | recall `febot-project`+`<产品线>`(查询=需求标题)，命中历史写进 `context.md` 末尾「历史参考」小节(注明来源需求ID,没命中不写)           | `context.md`             | `hindsight-memo.py recall --bank ... --out`             |
 | **planning(planner)**                | recall `li-expertise`(技术点)+`<产品线>`(模块/组件名);命中对齐进 `plan.md`「相关约定」小节;记忆与现状冲突→升级为 `M1/M2…`问题不猜       | `plan.md` `questions.md` | planner 被 derek 模板注入 recall 步骤                   |
 | **coding**                           | 不直插,只从 plan.md「历史参考/相关约定」间接吃到记忆                                                                                    | (不改)                   | —                                                       |
-| **plan_confirm / decisions** ★最关键 | 小前端答完 written 拍板写 `decisions.md` 后,把**有理由的拍板** retain 进 `multica-project` 或 `<产品线>`(context=`R-xxxx decisions Qn`) | `decisions.md`→bank      | `hindsight-memo.py retain --content "<决策>因为<理由>"` |
+| **plan_confirm / decisions** ★最关键 | 小前端答完 written 拍板写 `decisions.md` 后,把**有理由的拍板** retain 进 `febot-project` 或 `<产品线>`(context=`R-xxxx decisions Qn`) | `decisions.md`→bank      | `hindsight-memo.py retain --content "<决策>因为<理由>"` |
 | **code_review(reviewer)**            | recall `li-expertise`(评审画像);输出 `review.md` 新增「口味符合度」节;发现**之前纠正过又再犯**→标「重复问题」                           | `review.md`              | reviewer 模板注入                                       |
 | **fixing**                           | blocker 清空后,把"本轮 blocker 根因" retain:技术类→`<产品线>`,口味类→`li-expertise`                                                     | bank                     | `hindsight-memo.py retain`                              |
 | **done 复盘** ★                      | orchestrator 对各库 reflect("本需求有哪些可继承经验/人工否决了什么")；**摘要给人过目,人工点头才 retain 回库**                           | 复盘文件→bank            | `hindsight-memo.py reflect`(人工门禁)                   |
@@ -176,7 +176,7 @@ recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb
 
 ### ⑤ 提交合并（xiaoqian deploy 完成）◇
 
-- **做什么**：deploy 成功后,把"本需求已部署到 `<目标分支>`"记进 `multica-project` 或 `<产品线>`(一条轻量状态),供复盘/排期引用。
+- **做什么**：deploy 成功后,把"本需求已部署到 `<目标分支>`"记进 `febot-project` 或 `<产品线>`(一条轻量状态),供复盘/排期引用。
 - **改动**：`lib/server/git/deploy.ts` 成功后 + 钩子 retain「已部署」。可用 repo 而非推送到 jenkins 的回归。
 
 ### ⑥ 填工时（xiaoqian 工时）◇
@@ -190,12 +190,12 @@ recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb
 
 ## 6. 代码改造点清单（精确到文件）
 
-### AgentTeam 侧（multica 家）
+### AgentTeam 侧（febot 家）
 
 | 类型 | 文件                                     | 改什么                                                                                                      |
 | ---- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | 新建 | `scripts/hindsight-memo.py`              | recall/retain/reflect 三子命令,封 `hindsight_client`,支持 `--out FILE`                                      |
-| 新建 | `scripts/ensure-banks.py`                | 幂等建 3 bank + 预填充 multica-project 静态规矩                                                             |
+| 新建 | `scripts/ensure-banks.py`                | 幂等建 3 bank + 预填充 febot-project 静态规矩                                                             |
 | 改   | `.claude/commands/pipeline.md`           | init 步追加 recall;plan_confirm 步追加 retain;done 步追加 reflect+人工门禁;reviewer/fixing 模板注入 §5 内容 |
 | 改   | `.claude/agents/planner.md`              | tools 处加「可读 `recall` 产物文件」;prompt 加 M1/M2 记忆冲突问题规则                                       |
 | 改   | `.claude/agents/reviewer.md`             | 加起 recall 读 li-expertise;输出「口味符合度」节;标「重复问题」                                             |
@@ -271,7 +271,7 @@ recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb
 ## 10. 一页纸收束
 
 > **目标**：给 6 步流水线加"学习型记忆",让第 N+1 个需求吃到前 N 个的人工拍板。
-> **基建**：本机 Docker 起 Hindsight(内置 PG+pgvector),建 `li-expertise` / `multica-project` / 产品线三个 bank,抽取用 deepseek 便宜模型省成本。
+> **基建**：本机 Docker 起 Hindsight(内置 PG+pgvector),建 `li-expertise` / `febot-project` / 产品线三个 bank,抽取用 deepseek 便宜模型省成本。
 > **接入**：AgentTeam 靠 `hindsight-memo.py` 在 init/planning/decisions/review/done 五处 recall+retain;xiaoqian-manager 靠封 REST 的 `client.ts` 在 ①④⑤⑥ 轻量读写。②③ done 复盘 reflect 出稿,人工过目才入库。
 > **扩展**：MCP 直连 reviewer→Mental Models→共享 PG 中心化→Memory Defense→自动回写 rubric→对齐度量上 xiaoqian 看板。
 > **纪律**：文件即接口不变;只记"为什么";reflect 人审门禁;coder 最小视野不直连。**★线先跑通,◇线后补。**

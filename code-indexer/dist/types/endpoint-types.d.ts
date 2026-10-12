@@ -9,9 +9,9 @@ export interface Endpoint {
     fn: string;
     /** HTTP 方法：get / post / upload / download / delete */
     method: string;
-    /** 后端路径，如 /icis/api/catheter-configurations/search */
+    /** 后端路径，如 /example-sys/api/catheter-configurations/search */
     url: string;
-    /** 路径首段，通常是后端系统标识，如 icis */
+    /** 路径首段，通常是后端系统标识，如 example-sys */
     urlPrefix: string;
     file: string;
     line: number;

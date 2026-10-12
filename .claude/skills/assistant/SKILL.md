@@ -26,13 +26,13 @@ description: 业务助手——问什么答什么,直接给业务结论,不追�
 
 ## 0. 环境
 
-- 目标仓都在 `gitlab/<仓名>`(如 `gitlab/iho-icis-ui`)。索引器的 `<repo>` 参数是**文件系统路径**,不是仓名。
+- 目标仓都在 `<repoRoot>/<仓名>`(如 `<repoRoot>/example-repo`;`repoRoot` 见 `febot.config.json`,默认 `./gitlab`)。索引器的 `<repo>` 参数是**文件系统路径**,不是仓名。
 - bank 名 = `assistant-<仓名>`;跨仓通用知识(黑话、组织、通用约定)存 `assistant-shared`。
 
 ```
-事实层(现算,不落盘)  node code-indexer/bin/cli.mjs <cmd> gitlab/<仓名> [...args]
+事实层(现算,不落盘)  node code-indexer/bin/cli.mjs <cmd> <repoRoot>/<仓名> [...args]
 文档层(已存结论)      node scripts/assistant-memo.mjs recall --bank assistant-<仓名> --query "<问题>"
-项目地图(生成物)      yarn assistant:map gitlab/<仓名>   → docs/assistant/<仓名>/map.md
+项目地图(生成物)      yarn assistant:map <repoRoot>/<仓名>   → docs/assistant/<仓名>/map.md
 ```
 
 > Git Bash 下以 `/` 开头的参数会被 MSYS 转成 Windows 路径,需要时加 `MSYS_NO_PATHCONV=1` 前缀。
@@ -42,7 +42,7 @@ description: 业务助手——问什么答什么,直接给业务结论,不追�
 | 用户说                                 | 做什么                                                                             |
 | -------------------------------------- | ---------------------------------------------------------------------------------- |
 | 任何业务问题                           | §2 答题流程                                                                        |
-| `init <仓>` / 「出个项目地图」         | 跑 `yarn assistant:map gitlab/<仓>`;报路由/模块/端点数量                           |
+| `init <仓>` / 「出个项目地图」         | 跑 `yarn assistant:map <repoRoot>/<仓>`;报路由/模块/端点数量                           |
 | `folder <路径>` / 「这个文件夹干嘛的」 | §3 文件夹粒度                                                                      |
 | 「存一下」「把这条存进 X 仓」          | §4 store                                                                           |
 | `status`                               | `node scripts/assistant-memo.mjs status --all`                                     |
@@ -61,13 +61,13 @@ description: 业务助手——问什么答什么,直接给业务结论,不追�
 
    | 用户问的是…                     | 用                                                                                         |
    | ------------------------------- | ------------------------------------------------------------------------------------------ |
-   | 这个模块/页面是干嘛的           | `trace gitlab/<仓> <模块>`(路由→组件树→API→store/事件/权限/存储一次给全)                   |
-   | 这个 store 字段/状态谁读谁写    | `trace-state gitlab/<仓> <store>[.<字段>]`                                                 |
-   | 这个事件谁发的、谁接的          | `trace-event gitlab/<仓> <组件> <事件>`                                                    |
-   | 权限在哪判的、为什么拦不住      | `channels gitlab/<仓> --kind permission`(看 `definedInRepo`:false = 判定在 qiankun 宿主仓) |
-   | 数据存哪了(localStorage/cookie) | `channels gitlab/<仓> --kind storage`                                                      |
-   | 模块和谁有牵连                  | `modules gitlab/<仓> [<模块>]`                                                             |
-   | 找个符号/端点/路由              | `search gitlab/<仓> <词>`                                                                  |
+   | 这个模块/页面是干嘛的           | `trace <repoRoot>/<仓> <模块>`(路由→组件树→API→store/事件/权限/存储一次给全)                   |
+   | 这个 store 字段/状态谁读谁写    | `trace-state <repoRoot>/<仓> <store>[.<字段>]`                                                 |
+   | 这个事件谁发的、谁接的          | `trace-event <repoRoot>/<仓> <组件> <事件>`                                                    |
+   | 权限在哪判的、为什么拦不住      | `channels <repoRoot>/<仓> --kind permission`(看 `definedInRepo`:false = 判定在 qiankun 宿主仓) |
+   | 数据存哪了(localStorage/cookie) | `channels <repoRoot>/<仓> --kind storage`                                                      |
+   | 模块和谁有牵连                  | `modules <repoRoot>/<仓> [<模块>]`                                                             |
+   | 找个符号/端点/路由              | `search <repoRoot>/<仓> <词>`                                                                  |
    | 全貌、有哪些模块                | 先看 `docs/assistant/<仓>/map.md`,需要最新就跑 `yarn assistant:map`                        |
 
 4. **合并** → 用业务语言写答案 → 末尾附代码出处。
@@ -104,7 +104,7 @@ description: 业务助手——问什么答什么,直接给业务结论,不追�
 - 不 push、不改目标仓源码;产物只写 `docs/assistant/`。
 - 不把源码批量喂 LLM;对话中只按需 `Read` 少量文件补行号。
 - 敏感文件不读:`.env*`、`token.temp`、`~/.ssh/*`、`~/.aws/*`。
-- 不与流水线 bank 混用(`li-expertise` / `multica-project` 是研发流程记忆,**别往里写业务知识**)。
+- 不与流水线 bank 混用(`li-expertise` / `febot-project` 是研发流程记忆,**别往里写业务知识**)。
 - 不自动入库、不做 Web UI、不主动发起话题。
 - 不做「告警 → 提问清单」——告警只作事实提示,不要求用户回答。
 

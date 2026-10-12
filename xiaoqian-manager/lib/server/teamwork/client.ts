@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import { readTeamworkConfig, type TeamworkConfig } from "@/lib/server/config/root";
 import { readCredentials } from "./credentials";
 
-// 协作平台取数客户端。逻辑移植自 d:/multica/get-plan/fetch-plans.js
-// （零依赖纯 fetch），保持原有接口行为与坑位注释，不要凭猜测改动。
+// 协作平台取数客户端（零依赖纯 fetch），保持原有接口行为与坑位注释，不要凭猜测改动。
+// 平台地址、表格 id、autograph、user-tag 全部来自 febot.config.json 的 teamwork 段。
 
-const BASE = "https://teamwork.cnhis.cc";
-const TW_LOGIN = `${BASE}/teamworkapi/user/login`;
+const TW_LOGIN_PATH = "/teamworkapi/user/login";
 const TW_LIST = "/teamworkapi/tableReader/getTableData";
 const TW_DETAIL = "/teamworkapi/api/query/task/getById";
 const TW_RECORD = "/teamworkapi/api/query/question/getRecord";
@@ -15,9 +15,6 @@ const TW_SAVE_WORKHOURS = "/process/workHours/saveBatch";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
 
-const TABLE_ID = "1054970168284811264";
-const AUTOG =
-  "AAAAnz2MBJQlN0IlMjJwYXJhbXMlMjIlM0ElNUIlN0IlMjJwX3ZhbHVlJTIyJTNBJTIyMiUyMiUyQyUyMnBfbmFtZSUyMiUzQSUyMm1hcmslMjIlN0QlMkMlN0IlMjJwX3ZhbHVlJTIyJTNBJTIyODAwJTIyJTJDJTIycF9uYW1lJTIyJTNBJTIyb3Blbl93aW5kb3dfd2lkdGglMjIlN0QlNUQlN0QAAAAAAAAAAA";
 const FIELD_KEYS = [
   "title", "demand_level", "status", "username", "created_time", "fact_finish_time", "demand_id",
   "fact_start_time", "userid", "audit_state", "innovate_sign", "development_hour", "end_time", "fraction",
@@ -30,6 +27,36 @@ const MAX_PAGES = 50;
 const COOKIE_TTL_MS = 30 * 60 * 1000;
 
 const COOKIE_FILE = path.join(process.cwd(), "data", ".tw-cookie.json");
+
+// 配置惰性解析：import 期不读盘，缺配置时只在真正发请求时报错。
+function cfg(): TeamworkConfig {
+  return readTeamworkConfig();
+}
+
+/** 平台地址：teamwork.base → auth.txt 的 host → 报错。绝不兜底到任何内置地址。 */
+function baseUrl(): string {
+  const c = cfg();
+  if (c.base) return c.base;
+  try {
+    const host = readCredentials().host.trim();
+    if (host) return host.replace(/\/+$/, "");
+  } catch {
+    // auth.txt 也没有，落到下面统一报错
+  }
+  throw new TwLoginError("未配置协作平台地址：请在 febot.config.json 的 teamwork.base 填写");
+}
+
+function tableId(): string {
+  const v = cfg().tableId;
+  if (!v) throw new Error("未配置 teamwork.tableId：请在 febot.config.json 填写");
+  return v;
+}
+
+function autograph(): string {
+  const v = cfg().autograph;
+  if (!v) throw new Error("未配置 teamwork.autograph：请在 febot.config.json 填写");
+  return v;
+}
 
 let memoryCookie: { cookie: string; savedAt: number } | null = null;
 
@@ -78,28 +105,32 @@ function clearCookie(): void {
 }
 
 function reqHeaders(cookie: string) {
-  return {
+  const base = baseUrl();
+  const headers: Record<string, string> = {
     accept: "application/json, text/plain, */*",
     "content-type": "application/x-www-form-urlencoded",
     cookie,
-    origin: BASE,
-    referer: `${BASE}/`,
+    origin: base,
+    referer: `${base}/`,
     "user-agent": UA,
-    "user-tag": "141695",
   };
+  const tag = cfg().userTag;
+  if (tag) headers["user-tag"] = tag;
+  return headers;
 }
 
 export class TwLoginError extends Error {}
 
 async function reLogin(): Promise<string> {
   const cred = readCredentials();
-  const resp = await fetch(TW_LOGIN, {
+  const base = baseUrl();
+  const resp = await fetch(base + TW_LOGIN_PATH, {
     method: "POST",
     headers: {
       accept: "application/json, text/plain, */*",
       "content-type": "application/x-www-form-urlencoded",
-      origin: BASE,
-      referer: `${BASE}/`,
+      origin: base,
+      referer: `${base}/`,
       "user-agent": UA,
     },
     body: new URLSearchParams({
@@ -140,7 +171,7 @@ async function post(
   cookie: string,
   retry = true
 ): Promise<{ result?: string; resultMsg?: string; map?: Record<string, unknown> }> {
-  const resp = await fetch(BASE + pathname, {
+  const resp = await fetch(baseUrl() + pathname, {
     method: "POST",
     headers: reqHeaders(cookie),
     body,
@@ -217,8 +248,8 @@ function buildListBody(opts: FetchListOptions & { page: number }): string {
   return [
     `pageSize=${opts.pageSize}`,
     `page=${opts.page}`,
-    `tableId=${TABLE_ID}`,
-    `autograph=${AUTOG}`,
+    `tableId=${tableId()}`,
+    `autograph=${autograph()}`,
     "conObj=",
     "sqlExpression=",
     `qqConObj=${enc(JSON.stringify(qq))}`,
@@ -303,7 +334,7 @@ async function postOperation(
     operationAction: "js",
     taskFj: "[]",
   });
-  const resp = await fetch(BASE + TW_OPERATION, {
+  const resp = await fetch(baseUrl() + TW_OPERATION, {
     method: "POST",
     headers: {
       ...reqHeaders(cookie),
@@ -375,7 +406,7 @@ async function postSaveWorkHours(
     ...payload,
     jsonField: payload.jsonField ?? '{"aiTag":1}',
   });
-  const resp = await fetch(BASE + TW_SAVE_WORKHOURS, {
+  const resp = await fetch(baseUrl() + TW_SAVE_WORKHOURS, {
     method: "POST",
     headers: {
       ...reqHeaders(cookie),

@@ -119,5 +119,5 @@ yarn assistant:map gitlab/<仓>
 - 只读目标仓,产物只写 `docs/assistant/`;不 push、不改目标仓源码。
 - 不把源码批量喂 LLM;对话中只按需 `Read` 少量文件补行号。
 - 不读敏感文件:`.env*`、`token.temp`、`~/.ssh/*`、`~/.aws/*`。
-- 不往流水线 bank(`li-expertise` / `multica-project`)写业务知识——那是研发流程记忆。
+- 不往流水线 bank(`li-expertise` / `febot-project`)写业务知识——那是研发流程记忆。
 - 事实每次现算,`docs/assistant/` 下的地图只是快照。

@@ -136,7 +136,7 @@ export function buildPermissions(repoRoot, filesAbs, routes) {
         raw.push(...directiveRefs(repoRoot, absFile, registered));
     }
     const usedNames = new Set(raw.filter(r => r.kind === "inline").map(r => r.via));
-    // 同名声明可能有多个（medical-ui 里 `hasPermission` 既有收 item 的、也有收权限码的），
+    // 同名声明可能有多个（repo-e 里 `hasPermission` 既有收 item 的、也有收权限码的），
     // 取第一个是武断的 —— 全部收集、如实列出，让消费方自己判断
     const decls = [];
     for (const absFile of filesAbs) {

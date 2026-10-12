@@ -4,7 +4,7 @@ import * as ts from "typescript";
 import { parse as parseSfc } from "@vue/compiler-sfc";
 /**
  * 进程内缓存。6 个抽取器（组件图 / 端点 / store / 权限 / 存储 / WS）都要读同一批文件，
- * 不做缓存的话每个文件会被读盘 + 解析 6~10 次 —— 实测 nurse-manager 扫描要 9.6s，
+ * 不做缓存的话每个文件会被读盘 + 解析 6~10 次 —— 实测 repo-b 扫描要 9.6s，
  * 缓存后能压回 1s 量级。扫描进程短命，内存换时间很划算。
  */
 const partsCache = new Map();
@@ -115,7 +115,7 @@ export function dynamicImportSpecifier(node) {
     if (ts.isParenthesizedExpression(call))
         call = call.expression;
     // `import("x").catch(err => ErrorComponent(err))` —— 懒加载兜底的常见写法。
-    // 不剥掉这层的话，nurse-manager 整仓 123 条路由全都解析不出组件。
+    // 不剥掉这层的话，repo-b 整仓 123 条路由全都解析不出组件。
     if (ts.isCallExpression(call) && ts.isPropertyAccessExpression(call.expression)) {
         const inner = call.expression.expression;
         if (ts.isCallExpression(inner) && inner.expression.kind === ts.SyntaxKind.ImportKeyword) {

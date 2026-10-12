@@ -6,7 +6,7 @@
   hindsight-memo.py retain  --bank X --content C [--context CTX] [--out FILE]
   hindsight-memo.py reflect --bank X [--query Q] [--out FILE]
 
-设计约束（贴合 multica "只传路径、只收摘要"）：
+设计约束（贴合 febot "只传路径、只收摘要"）：
   - 输出 JSON 到 stdout；--out FILE 时同时落盘供 subagent 用路径读。
   - **软降级**：Hindsight 未起 / 无网络 / 接口异常 → 打印空结果、exit 0，
     绝不抛异常阻塞流水线。调用方据此"没命中就不写、禁止编造"。

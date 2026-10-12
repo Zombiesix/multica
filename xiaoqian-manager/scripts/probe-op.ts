@@ -5,6 +5,7 @@ import {
   pushDevOperation,
 } from "../lib/server/teamwork/client";
 import { readCredentials } from "../lib/server/teamwork/credentials";
+import { readTeamworkConfig } from "../lib/server/config/root";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -23,7 +24,10 @@ async function rawOperation(taskId: string, mode: string) {
     origin: base,
   };
   if (!mode.includes("no-ua")) headers["user-agent"] = ua;
-  if (mode.includes("usertag")) headers["user-tag"] = "141695";
+  if (mode.includes("usertag")) {
+    const tag = readTeamworkConfig().userTag;
+    if (tag) headers["user-tag"] = tag;
+  }
   if (mode.includes("referer")) headers["referer"] = `${base}/`;
   if (mode.includes("xreq")) headers["x-requested-with"] = "XMLHttpRequest";
   let body: string;
@@ -62,9 +66,13 @@ async function matrix(taskId: string) {
   }
 }
 
-// 可通过命令行参数覆盖：yarn tsx scripts/probe-op.ts <任务ID> <需求ID>
-const TASK_ID = process.argv[2] ?? "57775621496168097";
-const DEMAND_ID = process.argv[3] ?? "57758880638083739";
+// 任务ID / 需求ID 必填（内部数据，不内置默认值）：yarn tsx scripts/probe-op.ts <任务ID> <需求ID>
+const TASK_ID = process.argv[2] ?? "";
+const DEMAND_ID = process.argv[3] ?? "";
+if (!TASK_ID || !DEMAND_ID) {
+  console.error("usage: yarn tsx scripts/probe-op.ts <任务ID> <需求ID> [--matrix|--raw <mode>]");
+  process.exit(1);
+}
 
 function brief(rows: unknown[]) {
   return rows.map((r) => {

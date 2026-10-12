@@ -6,8 +6,8 @@ import { resolveModuleFile } from "./resolve";
 /**
  * 常量解析层。
  *
- * 实测这是端点抽取的**最大单点缺口**：iho-medical-record-ui 的 287 个未解析
- * 全是 `request.post({ url: CommonApi.cancelRecycle })`，iho-ehr-ui 的 123 个
+ * 实测这是端点抽取的**最大单点缺口**：repo-g 的 287 个未解析
+ * 全是 `request.post({ url: CommonApi.cancelRecycle })`，repo-f 的 123 个
  * 全是 `request.post(CommonApi.x, data)` —— URL 是 enum 成员。
  * 不解析常量，这些仓的端点永远是 0。
  *
@@ -198,7 +198,7 @@ export function createLiteralResolver(
       return lookupConst(absFile, node.text, 0);
     }
 
-    // 拼接：`HAIMIS_TYPE + "/systemDict/queryByCode"`（haimis 的写法）。
+    // 拼接：`HAIMIS_TYPE + "/systemDict/queryByCode"`（repo-d 的写法）。
     // 两侧都解得出来才拼；有一侧是运行时值就整体放弃，不硬猜。
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
       const left = resolve(node.left);

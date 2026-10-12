@@ -131,7 +131,7 @@ export interface EventEdge {
   unmatched?: boolean;
   /**
    * 子组件是**纯透传包装**：自己不发事件，靠 `v-bind="$attrs"` 转发给内部组件
-   * （icis 的 `ChartColorPicker.vue` 把 `@update:value` 转发给 `n-color-picker`）。
+   * （example-sys 的 `ChartColorPicker.vue` 把 `@update:value` 转发给 `n-color-picker`）。
    * 这类 unmatched 是正常的，且它解释了「为什么在组件里找不到这个 emit」。
    */
   passthrough?: boolean;
@@ -181,7 +181,7 @@ export interface ModuleGraph {
   edges: ModuleEdge[];
   /**
    * 模块 → 共享层目录的引用（目标不属于任何模块，如 `src/components`）。
-   * 实测 icis 有 43% 的组件引用边指向这里 —— 不列出来，模块视角会漏掉近一半关系。
+   * 实测 example-sys 有 43% 的组件引用边指向这里 —— 不列出来，模块视角会漏掉近一半关系。
    */
   sharedTargets: { from: string; dir: string; count: number }[];
   /** 被多个模块读写的 store —— 跨模块共享状态的真正来源 */

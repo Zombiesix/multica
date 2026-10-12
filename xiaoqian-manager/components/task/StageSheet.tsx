@@ -129,7 +129,7 @@ export default function StageSheet({
               id="stage-owner"
               value={owner}
               onChange={(e) => setOwner(e.target.value)}
-              placeholder="如：张九波"
+              placeholder="如：你的协作平台用户名"
             />
           </div>
           <div className="space-y-2">

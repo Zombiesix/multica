@@ -65,7 +65,7 @@ export function detectStack(repoRoot) {
     const routerDir = firstExistingDir(srcAbs, ["router", "routers"]);
     const resolvedRouterFile = routerFile ?? (routerDir ? firstExistingFile(routerDir, ["index.ts", "index.js"]) : null);
     // 收集**所有**存在的页面目录，不只是第一个 ——
-    // icis 同时有 src/page 与 src/view，只取第一个会让 src/view 整片页面消失
+    // example-sys 同时有 src/page 与 src/view，只取第一个会让 src/view 整片页面消失
     const pageDirs = ["page", "pages", "view", "views"]
         .map(c => firstExistingDir(srcAbs, [c]))
         .filter((d) => d !== null)
@@ -89,7 +89,7 @@ export function detectStack(repoRoot) {
 /**
  * 从 vite 配置里读 `build.outDir`。
  *
- * 默认忽略表只有 dist/build —— 但 aers-web 与 cssd-ui 把 outDir 设成了 `web`，
+ * 默认忽略表只有 dist/build —— 但 repo-h 与 repo-a 把 outDir 设成了 `web`，
  * 于是**提交进仓的压缩 bundle**（`web/assets/js/index-*.js`）会被当源码扫描，
  * 污染 store / 组件 / 文件计数。按配置读，不靠猜目录名。
  */
@@ -111,7 +111,7 @@ export function detectBuildOutDir(repoRoot) {
         // 用数组累加而不是 let 变量：TS 的控制流分析看不到闭包里的赋值，会把它收窄成 never
         const hits = [];
         // 必须限定在 `build: { outDir }` 里 —— 别的插件配置也可能有 outDir
-        // （aers-web 第 72 行就是 `outDir: "."`，取第一个会误判成仓根）
+        // （repo-h 第 72 行就是 `outDir: "."`，取第一个会误判成仓根）
         const visit = (node, inBuild) => {
             if (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name)) {
                 if (node.name.text === "build") {
@@ -143,7 +143,7 @@ const HASHED_BUNDLE = /[.-][0-9a-f]{8}\./i;
 /**
  * 按**内容**识别构建产物目录。
  *
- * 配置读不出来的时候只能看内容：icis 的 `build` 脚本是纯 `vite build`（默认 outDir=`dist`），
+ * 配置读不出来的时候只能看内容：example-sys 的 `build` 脚本是纯 `vite build`（默认 outDir=`dist`），
  * 但仓里**提交了 `web/`** 的产物 —— 里面是压缩 bundle，会把守卫、权限码这些
  * 全扫出一堆假命中。
  *

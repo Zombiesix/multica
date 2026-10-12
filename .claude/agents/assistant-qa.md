@@ -21,7 +21,7 @@ background: false
 1. 先 `node scripts/assistant-memo.mjs recall --bank assistant-<仓名> --query "<问题>"` 查已存结论。
 2. 未命中 → 走事实层现算:
    ```bash
-   node code-indexer/bin/cli.mjs <cmd> gitlab/<仓名> [...args]
+   node code-indexer/bin/cli.mjs <cmd> <repoRoot>/<仓名> [...args]
    ```
    按问题选命令:`trace`(模块业务链路)/ `trace-state`(字段谁读谁写)/ `trace-event`(事件上下游)/
    `channels --kind permission|storage` / `modules` / `search`。

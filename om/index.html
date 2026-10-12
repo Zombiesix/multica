@@ -65,7 +65,7 @@
 
   <!-- 底部 -->
   <footer class="max-w-6xl mx-auto px-4 pb-10 text-center text-xs text-slate-400">
-    数据保存在当前目录 data.json · 直接修改即可 · 团队可 Git 共享
+    数据保存在 om/data.json（本地生成，不入库）· 需要共享请用「导出」
   </footer>
 
   <!-- ================= 弹窗：新增/编辑项目 ================= -->
@@ -102,7 +102,7 @@
   <!-- ================= 空状态 ================= -->
   <div id="emptyState" class="hidden max-w-6xl mx-auto px-4 py-16 text-center text-slate-400">
     <div class="text-5xl mb-3">🗂️</div>
-    <p class="text-sm">暂无项目，点右上角「一键更新」获取本周已完成任务，或「＋ 负责人」新建。</p>
+    <p class="text-sm">暂无项目：点右上角「♻ 一键更新」拉取本周已完成任务，或点「＋ 新增项目」手工录入。</p>
   </div>
 
   <script>
@@ -115,19 +115,22 @@
 
     let state = null;
 
-    const USERS = ['张九波', '陈家新', '卢友路', '郑枫鸿', '王洁'];
+    // 负责人列表来自服务端 /api/config（读 febot.config.json 的 teamwork.users），
+    // 未配置时为空 —— 所有用到的地方都要能容忍空列表。
+    let USERS = [];
+    let currentUser = '';
     // 默认负责人：优先取地址栏 ?name=，否则回退第一个
     function initialUser() {
       try {
         const n = new URLSearchParams(location.search).get('name');
         if (n && USERS.includes(n)) return n;
       } catch (e) { /* ignore */ }
-      return USERS[0];
+      return USERS[0] || '';
     }
-    let currentUser = initialUser();
 
     // 返回指定负责人的「本周已完成」；旧数据（currentWeekFinished）仅归并到第一个负责人做兼容
     function weekDataFor(user) {
+      if (!user) return [];
       if (state && state.currentWeekByUser && state.currentWeekByUser[user]) return state.currentWeekByUser[user];
       if (user === USERS[0] && state && state.currentWeekFinished) return state.currentWeekFinished;
       return [];
@@ -135,11 +138,29 @@
 
     function initWeekUserSelect() {
       const sel = document.getElementById('weekUserSelect');
+      if (!USERS.length) {
+        sel.innerHTML = '<option value="">（未配置负责人）</option>';
+        sel.disabled = true;
+        return;
+      }
+      sel.disabled = false;
       sel.innerHTML = USERS.map(u => `<option value="${u}"${u === currentUser ? ' selected' : ''}>${u}</option>`).join('');
       sel.addEventListener('change', () => {
         currentUser = sel.value;
         render();
       });
+    }
+
+    // 负责人列表由服务端配置提供；取不到就保持空列表（页面仍可用，只是「一键更新」不可用）
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (Array.isArray(cfg.users) && cfg.users.length) USERS = cfg.users;
+        else if (cfg.defaultUser) USERS = [cfg.defaultUser];
+      } catch (e) { /* 服务未启动或未配置，保持空列表 */ }
+      currentUser = initialUser();
     }
 
     // 按用户读取项目的「新功能/修复」；旧数据（features/fixes 共享字段）做兼容兜底
@@ -152,6 +173,7 @@
     }
 
     async function load() {
+      await loadConfig();
       try {
         const res = await fetch('/api/data');
         if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -299,6 +321,7 @@
       const idx = pi === 'null' || pi === 'undefined' ? null : +pi;
       const name = document.getElementById('pfName').value.trim();
       if (!name) { alert('请输入项目名'); return; }
+      if (!currentUser) { alert('未配置负责人：请在 febot.config.json 的 teamwork.users 填写。'); return; }
       const obj = {
         name,
         packaged: document.getElementById('pfPackaged').value,
@@ -452,6 +475,7 @@
 
     // ---- 一键更新 ----
     async function updateWeek() {
+      if (!currentUser) { alert('未配置负责人：请在 febot.config.json 的 teamwork.users 填写。'); return; }
       const btn = document.getElementById('updateBtn');
       const orig = btn.textContent;
       btn.disabled = true; btn.textContent = '更新中…';
@@ -465,7 +489,7 @@
         save();
         alert(`已更新：共 ${data.total} 条已完成任务，分属 ${data.modules.length} 个项目`);
       } catch (e) {
-        alert('一键更新失败：' + e.message + '\n若为鉴权/网络问题，请更新 server.js 顶部的 TW_COOKIE。');
+        alert('一键更新失败：' + e.message + '\n若为鉴权/网络问题，请检查 febot.config.json 的 teamwork 段（base / cookie），或 .teamwork/auth.txt 里的账号密码。');
       } finally {
         btn.disabled = false; btn.textContent = orig;
       }

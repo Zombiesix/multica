@@ -6,8 +6,8 @@ import { fileExists, toRepoRel } from "./ignore";
 /**
  * 路径别名表。
  *
- * 过去 `resolveSpecifier` 硬编码「`@/` → srcDir」，结果 iho-haimis-ui 的
- * `@service`（→ src/service/api）、iho-medical-ui 的 `@treatment` / `@nurse`
+ * 过去 `resolveSpecifier` 硬编码「`@/` → srcDir」，结果 repo-d 的
+ * `@service`（→ src/service/api）、repo-e 的 `@treatment` / `@nurse`
  * 全部解析不出来，被静默丢弃 —— 那些仓的 import 关系有系统性缺口。
  *
  * 这里真读配置：tsconfig 的 `compilerOptions.paths`（全仓都有）+ vite 的
@@ -212,7 +212,7 @@ function readViteAliases(
             }
             const target = replProp ? evalPathExpr(replProp.initializer, repoRoot) : null;
             if (target === null) {
-              // 实测 nurse-manager / nbs-web 的数组式只有 axios 去重，不是路径别名 —— 正常，不报噪音
+              // 实测 repo-b / repo-c 的数组式只有 axios 去重，不是路径别名 —— 正常，不报噪音
               continue;
             }
             entries.push({ prefix: prefixOf(key), target: normalizeTarget(repoRoot, target) });

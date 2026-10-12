@@ -6,7 +6,13 @@ import SyncButton from "@/components/sync/SyncButton";
 import TimesheetEntry from "@/components/timesheet/TimesheetEntry";
 import { ThemeToggle } from "./ThemeToggle";
 
-export default function AppHeader({ updatedAt }: { updatedAt: string }) {
+export default function AppHeader({
+  updatedAt,
+  defaultUser = "",
+}: {
+  updatedAt: string;
+  defaultUser?: string;
+}) {
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
@@ -23,7 +29,7 @@ export default function AppHeader({ updatedAt }: { updatedAt: string }) {
             </span>
           )}
           <TimesheetEntry />
-          <SyncButton />
+          <SyncButton defaultUser={defaultUser} />
           <ThemeToggle />
         </div>
       </div>

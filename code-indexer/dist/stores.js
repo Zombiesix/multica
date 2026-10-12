@@ -54,7 +54,7 @@ function ownerModuleOf(file, pageDirsRel) {
 /**
  * 持久化配置。两个插件形状不同，都要认：
  * - `pinia-plugin-persistedstate`：`persist: true` 或 `persist: { key, storage, paths }`
- * - `pinia-plugin-persist`（icis 在用）：`persist: { enabled, strategies: [{ key, storage, paths }] }`
+ * - `pinia-plugin-persist`（example-sys 在用）：`persist: { enabled, strategies: [{ key, storage, paths }] }`
  *
  * 读不到就返回 null —— **不要拿 store id 兜底**，那等于编造一个不存在的 key。
  */

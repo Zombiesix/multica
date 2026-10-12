@@ -1,13 +1,13 @@
 #!/usr/bin/env python
-"""ensure-banks.py - 幂等创建 Hindsight bank + 预填充 multica-project 静态规矩。
+"""ensure-banks.py - 幂等创建 Hindsight bank + 预填充 febot-project 静态规矩。
 
 用法：
-  python scripts/ensure-banks.py [--product iho-cssd-ui] [--reseed] [--skip-seed]
+  python scripts/ensure-banks.py [--product <你的产品线名>] [--reseed] [--skip-seed]
 
 行为：
-  - 建/clip 3 个 bank：li-expertise / multica-project / <产品线>(默认 iho-cssd-ui)。
-  - 往 multica-project 预填充流水线静态规矩：**按 marker 去重**（已存在则不重复写）。
-  - `--reseed`：先把**已过时的规矩**（正文含 retire 关键词，如旧 worktree 约定）
+  - 建/clip 3 个 bank：li-expertise / febot-project / <产品线>(默认 product-line)。
+  - 往 febot-project 预填充流水线静态规矩：**按 marker 去重**（已存在则不重复写）。
+  - `--reseed`：先把**已过时的规矩**（正文含 retire 关键词，如写死的旧分支名/旧措辞）
     PATCH 成 `state=invalidated`（软退休，不物理删除、可查证），再补写当前规矩。
     流程改动后跑一次这个，避免 planner/orchestrator recall 到旧约定。
   - **软降级**：Hindsight 不可用 → 打印不可达提示、exit 0，不抛异常。
@@ -25,10 +25,10 @@ BASE_URL = "http://localhost:8888"
 API_PREFIX = "/v1/default/banks"
 TIMEOUT_S = 30
 
-DEFAULT_PRODUCT = "iho-cssd-ui"
+DEFAULT_PRODUCT = "product-line"
 
-# multica-project 静态规矩（写入 = 规则被应用的实例，供 planner/orchestrator recall）
-mv = "multica-project"
+# febot-project 静态规矩（写入 = 规则被应用的实例，供 planner/orchestrator recall）
+mv = "febot-project"
 
 # 静态规矩：(正文, 去重 marker)。marker = 正文里一个能扛住抽取 LLM 改写的特征短语，
 # 库里已有含该 marker 的条目就不再重复写（Hindsight 的抽取会改写正文，故不能用全文比对）。
@@ -39,17 +39,19 @@ STATIC_RULES = [
      "需要进行 node_modules 修改"),
     ("commit message 单行规范：feat(R-<别名>): <标题>，只含标题一行、不加正文。标题含中文时用 -F 写消息文件，勿经 bash 中文参数。",
      "commit message 单行规范"),
-    ("基准分支固定规则：仓内有 dev-zjb 用 dev-zjb，否则用 dev（非 master），主仓 checkout 常驻该分支。",
-     "基准分支固定规则"),
-    ("AgentTeam 直接在主仓固定分支工作区改代码（不建 worktree、不切分支），改动以未提交形式留在工作区，绝不 add/commit/push 远程；远程提交合并是 xiaoqian deploy 阶段由人完成。",
-     "直接在主仓固定分支工作区改代码"),
-    ("开工门禁：需求开工前主仓工作区必须干净（当前分支 == 固定分支，且 git status --porcelain 为空），不干净就停下来等人工在 ⑤ 步提交；因共用同一工作区，同一仓库同一时间只能跑一个需求。",
+    ("基准分支由配置决定：从 febot.config.json 的 branches.default 读取（默认 dev，非 master），候选分支见 branches.candidates；主仓 checkout 常驻该分支。",
+     "基准分支由配置决定"),
+    ("AgentTeam 直接在主仓基准分支工作区改代码（不建 worktree、不切分支），改动以未提交形式留在工作区，绝不 add/commit/push 远程；远程提交合并是 xiaoqian deploy 阶段由人完成。",
+     "直接在主仓基准分支工作区改代码"),
+    ("开工门禁：需求开工前主仓工作区必须干净（当前分支 == febot.config.json 的 branches.default，且 git status --porcelain 为空），不干净就停下来等人工在 ⑤ 步提交；因共用同一工作区，同一仓库同一时间只能跑一个需求。",
      "开工门禁"),
 ]
 
-# --reseed 时软退休：正文含这些词的老条目视为过时（2026-10-12 起弃用 worktree）
-RETIRE_KEYWORDS = ["worktree"]
-SEED_TAG = "seed:multica-project"
+# --reseed 时软退休：正文含这些词的老条目视为过时（2026-10-12 起分支改由配置驱动）。
+# 注意别把 "worktree" 放进来：现行「直接在主仓基准分支工作区改代码」这条正文里就有
+# 「不建 worktree」，按关键词退休会把当前规矩自己退休掉。这里只放写死分支名/旧措辞。
+RETIRE_KEYWORDS = ["dev-zjb", "固定分支"]
+SEED_TAG = "seed:febot-project"
 
 
 def _post(path: str, payload: dict) -> object:
@@ -138,10 +140,10 @@ def main() -> int:
     p.add_argument("--product", default=DEFAULT_PRODUCT)
     p.add_argument("--skip-seed", action="store_true", help="只建库，不预填充静态规矩")
     p.add_argument("--reseed", action="store_true",
-                   help="先软退休已过时的规矩（正文含 worktree 等旧约定），再补齐当前规矩")
+                   help="先软退休已过时的规矩（正文含旧分支名等旧约定），再补齐当前规矩")
     a = p.parse_args()
 
-    banks = ["li-expertise", "multica-project", a.product]
+    banks = ["li-expertise", "febot-project", a.product]
     try:
         src_banks = [b for b in banks if b]
         created = 0

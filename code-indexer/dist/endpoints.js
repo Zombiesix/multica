@@ -6,11 +6,11 @@ import { resolveModuleFile } from "./resolve";
 /**
  * 从调用的第一个实参里取 URL。三种实测写法：
  *
- * 1. 直接字面量 —— `$http.get("/icis/api/x", params)`
- * 2. 常量 / enum 成员 —— `request.post(CommonApi.x, data)`（ehr-ui）
- * 3. config object —— `request.post({ url: CommonApi.x, data })`（cssd-ui / medical-record）
+ * 1. 直接字面量 —— `$http.get("/example-sys/api/x", params)`
+ * 2. 常量 / enum 成员 —— `request.post(CommonApi.x, data)`（repo-f）
+ * 3. config object —— `request.post({ url: CommonApi.x, data })`（repo-a / repo-g）
  *
- * 过去只看第 1 种，于是除 icis 外的仓端点全部静默归零。
+ * 过去只看第 1 种，于是除 example-sys 外的仓端点全部静默归零。
  */
 function urlFromCallArg(arg, literals) {
     if (!arg)
@@ -89,7 +89,7 @@ function clientBindings(sf, absFile, repoRoot, srcDirRel, clientFiles) {
  *
  * 1. `export function f() {}`
  * 2. `export const f = () => {}`
- * 3. **类方法** —— haimis 的写法：`class X { f() { return http.get(...) } }`
+ * 3. **类方法** —— repo-d 的写法：`class X { f() { return http.get(...) } }`
  *    配 `export const x = new X()`。类没被 export，但实例被导出了，
  *    所以判定要同时看 `export class` 和 `export const y = new X()`。
  */
@@ -152,7 +152,7 @@ function exportedFunctions(sf) {
 /**
  * 函数体里由客户端**工厂**造出的局部客户端。
  *
- * nurse-manager 的写法：
+ * repo-b 的写法：
  *   const request = useRequest(source);
  *   return request.post({ url: Api.x, data });
  * `request` 不是 import 绑定，所以过去整个仓 264 个函数全落空。
@@ -168,7 +168,7 @@ function localClients(body, clients) {
             ts.isIdentifier(node.expression) &&
             clients.has(node.expression.text);
         // 可调用客户端的一次请求：`request({ url, method })` —— 这是在**用**客户端，不是造客户端。
-        // 不排除掉的话，cssd-ui-mobile 的请求会被误判成工厂而整仓落空。
+        // 不排除掉的话，repo-mobile 的请求会被误判成工厂而整仓落空。
         // 注意 node.arguments[0] 在无参调用（useRequest()）时是 undefined，别直接喂给 is*
         const firstArg = ts.isCallExpression(node) ? node.arguments[0] : undefined;
         const isInvocation = isCall &&
@@ -238,7 +238,7 @@ export function extractEndpoints(script, absFile, repoRoot, srcDirRel, clientFil
                     const url = urlFromCallArg(arg, literals);
                     const method = methodFromConfigObject(arg);
                     if (url && method) {
-                        // 可调用客户端：`request({ url, method: "POST", data })`（cssd-ui-mobile）。
+                        // 可调用客户端：`request({ url, method: "POST", data })`（repo-mobile）。
                         // 方法与 URL 都在 config 里，不是 `request.post(...)` 形态。
                         found.push({ fn: name, method, url, urlPrefix: urlPrefixOf(url), file: rel, line: at });
                     }

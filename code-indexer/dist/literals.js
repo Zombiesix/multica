@@ -161,7 +161,7 @@ export function createLiteralResolver(absFile, repoRoot, srcDirRel) {
         if (ts.isIdentifier(node)) {
             return lookupConst(absFile, node.text, 0);
         }
-        // 拼接：`HAIMIS_TYPE + "/systemDict/queryByCode"`（haimis 的写法）。
+        // 拼接：`HAIMIS_TYPE + "/systemDict/queryByCode"`（repo-d 的写法）。
         // 两侧都解得出来才拼；有一侧是运行时值就整体放弃，不硬猜。
         if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
             const left = resolve(node.left);

@@ -4,9 +4,8 @@
 >
 > **同仓串行（硬规则）**：改动直接落在主仓工作区，同仓两个需求会互相污染，**同一仓库同一时间只能跑一个需求**。
 > 并行只在不同仓之间成立；开工门禁（工作区必须干净）会自动拦住同仓并行的第二个需求。
+>
+> 本文件由 `yarn setup` 从 `example/file-lock.md` 生成，初始为空表。
 
 | 文件 | 占用需求 | 状态 |
 | ---- | -------- | ---- |
-| `reuseapp-blood-bank-web/src/views/blood-system/components/CustomExtendField.vue` | R-016931 | 新建 |
-| `reuseapp-blood-bank-web/src/views/blood-system/AddMatchTest.vue` | R-016931 | 改 |
-| `reuseapp-blood-bank-web/src/views/blood-system/mixin/AddMatchForm.js` | R-016931 | 改 |

@@ -5,7 +5,7 @@ import { assertBranch, resolveRepoPath } from "./config";
 // cherry-pick 到目标分支 → 推目标分支」。
 //
 // 用 cherry-pick 而不是 merge：只搬本次刚产生的那个提交，不产生合并提交。
-// 这同时绕开了仓里的 post-merge 守卫（如 iho-cssd-ui 的钩子会在合并来源分支名含
+// 这同时绕开了仓里的 post-merge 守卫（有些仓的钩子会在合并来源分支名含
 // "feat" 时 git reset --keep HEAD~1 撤销合并，而 git 忽略 post-merge 的退出码，
 // 会造成「看起来成功、实际被撤销」）。cherry-pick 没有 MERGE_HEAD，钩子不触发。
 

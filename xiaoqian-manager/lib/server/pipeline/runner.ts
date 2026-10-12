@@ -4,15 +4,15 @@ import path from "node:path";
 import type { Task } from "@/lib/domain/schema";
 import { updateTask } from "@/lib/server/store";
 
-// 计划节点「开始」：弹一个新终端窗口在 multica 根目录跑交互式 claude `/pipeline <任务ID>`，
+// 计划节点「开始」：弹一个新终端窗口在 febot 根目录跑交互式 claude `/pipeline <任务ID>`，
 // 一次覆盖 计划+写代码 两个阶段，并在正常收工时接续置完成 人工测试。窗口关闭（进程退出）即收尾：
 // exit 0 → 计划/写代码/人工测试 三阶段自动 done；非 0 → 保留 active 并写错误 note。
 //
 // 已知边界：仅单进程有效（与 store.ts 同一前提）；dev server 重启会丢 exit 回调，
 // 阶段停在 active，用 StageSheet 手动收尾。
 
-// claude 的工作目录固定为 multica 根（本应用的上级目录）
-const MULTICA_ROOT = path.resolve(process.cwd(), "..");
+// claude 的工作目录固定为 febot 根（本应用的上级目录）
+const FEBOT_ROOT = path.resolve(process.cwd(), "..");
 // 计划文件是临时文件：xiaoqian-manager 生成、流水线读完即弃，正常结束自动删除
 const TEMP_PLAN_DIR = path.join(process.cwd(), "data", "temp");
 
@@ -106,7 +106,7 @@ export async function startPipeline(task: Task): Promise<Task> {
         "claude",
         `/pipeline ${task.id}`,
       ],
-      { cwd: MULTICA_ROOT, windowsHide: false, stdio: "ignore" }
+      { cwd: FEBOT_ROOT, windowsHide: false, stdio: "ignore" }
     );
   } catch (e) {
     // 窗口没弹起来：把两个阶段退回未开始，别留一个虚假的进行中

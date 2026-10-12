@@ -39,10 +39,10 @@ interface SyncResult {
   errors: string[];
 }
 
-export default function SyncButton() {
+export default function SyncButton({ defaultUser = "" }: { defaultUser?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState("张九波");
+  const [user, setUser] = useState(defaultUser);
   const [statusOpt, setStatusOpt] = useState("1,2");
   const [moduleName, setModuleName] = useState("");
   const [running, setRunning] = useState(false);
@@ -102,7 +102,7 @@ export default function SyncButton() {
               id="sync-user"
               value={user}
               onChange={(e) => setUser(e.target.value)}
-              placeholder="张九波"
+              placeholder={defaultUser || "你的协作平台用户名"}
             />
           </div>
           <div className="space-y-2">
@@ -126,7 +126,7 @@ export default function SyncButton() {
               id="sync-module"
               value={moduleName}
               onChange={(e) => setModuleName(e.target.value)}
-              placeholder="如：iHO-输血管理系统"
+              placeholder="如：产品/模块名"
             />
           </div>
         </div>

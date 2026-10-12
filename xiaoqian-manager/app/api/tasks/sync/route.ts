@@ -9,6 +9,7 @@ import {
 } from "@/lib/server/teamwork/client";
 import { hasCredentials } from "@/lib/server/teamwork/credentials";
 import { rowToTask } from "@/lib/server/teamwork/mapper";
+import { readTeamworkConfig } from "@/lib/server/config/root";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,13 @@ export async function POST(req: Request) {
       // 空 body 走默认筛选
     }
     const statuses = body.statuses?.length ? body.statuses : ["1", "2"];
-    const user = body.user ?? "张九波";
+    const user = (body.user || "").trim() || readTeamworkConfig().username;
+    if (!user) {
+      return NextResponse.json(
+        { error: "未指定执行人：请在 febot.config.json 的 teamwork.username 配置默认值，或在同步弹窗里填写" },
+        { status: 400 }
+      );
+    }
     const moduleName = body.module ?? "";
 
     const rows = await fetchList({ statuses, user, module: moduleName, pageSize: 50 });

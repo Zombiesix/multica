@@ -27,20 +27,20 @@ description: AgentTeam 前置喂食器——把一份 PM 需求/任务 markdown(
 - 附件:所有图片/CDN 链接,原样保留。
 
 ### 2. 查映射定目标仓库 + 开工门禁
-- 读 `project-map.md`,按 PM 卡「产品/模块 + 标题」查对应 gitlab 仓库目录:
-  - 表中有「判断规则」的行,**按标题关键词匹配**(如消毒供应含「PDA」→ `iho-cssd-ui-mobile`,护理系统含「护理大屏」→ `iho-nbs-web`)。
-  - 命中失败 / 命中多条 / 一产品多仓 → 向 张三 要,确认后回填 `project-map.md`,不许猜。
-- 采集需求标题用于判断;目标仓库 = `gitlab/` 下的仓库目录名(例 `iho-cssd-ui-mobile`)。
-- **基准分支(固定规则)**:仓内有 `dev-zjb` 用 `dev-zjb`,否则用 `dev`(非 master)。**改动直接落在该仓这个分支的工作区里**(不建 worktree、不切分支)。
+- 读 `project-map.md`,按 PM 卡「产品/模块 + 标题」查对应仓库目录:
+  - 表中有「判断规则」的行,**按标题关键词匹配**(示例:含「移动端」→ `example-mobile-repo`,含「大屏」→ `example-screen-repo`;实际以你团队的 `project-map.md` 为准)。
+  - 命中失败 / 命中多条 / 一产品多仓 → 向负责人要,确认后回填 `project-map.md`,不许猜。
+- 采集需求标题用于判断;目标仓库 = `repoRoot` 下的仓库目录名(例 `example-repo`)。`repoRoot` 见 `febot.config.json`,默认 `./gitlab`。
+- **基准分支**:读 `febot.config.json` 的 `branches.default`(默认 `dev`,非 master)。**改动直接落在该仓这个分支的工作区里**(不建 worktree、不切分支)。
 
 #### 开工门禁(不通过就停在这里,别往下走)
 改在主仓工作区里做,所以**开工前工作区必须干净**——这是替代 worktree 的隔离手段。
 ```bash
-git -C gitlab/<仓库> rev-parse --abbrev-ref HEAD   # 必须 == 固定分支(dev-zjb / dev)
-git -C gitlab/<仓库> status --porcelain            # 必须为空
+git -C <repoRoot>/<仓库> rev-parse --abbrev-ref HEAD   # 必须 == branches.default
+git -C <repoRoot>/<仓库> status --porcelain            # 必须为空
 ```
 - 分支不对 → 停,报告实际分支,不擅自 `checkout`(可能覆盖别人的活)。
-- 工作区非空 → 停,把 `status --porcelain` 原文贴给张三,提示「上一个需求的改动还没提交,请先在 ⑤ 步 deploy 或人工 commit」。**不许**代为 commit、stash、checkout 清理。
+- 工作区非空 → 停,把 `status --porcelain` 原文贴给负责人,提示「上一个需求的改动还没提交,请先在 ⑤ 步 deploy 或人工 commit」。**不许**代为 commit、stash、checkout 清理。
 - 通过后把结果写进 context.md 的「关联代码位置」附近或 state.json,便于收尾复核。
 
 ### 3. 生成需求目录(脚手架)
@@ -49,7 +49,7 @@ git -C gitlab/<仓库> status --porcelain            # 必须为空
 ### 3. 逐文件填写
 - **context.md**:顶部先写 **需求标题**(= PM 文件首行 `# ` 标题,如 `医生站输血医嘱界面血液分类和排序`)+ **需求描述(一句话)**(由标题/问题描述浓缩,供 planner 快速理解);正文 `需求描述(全文)`=`问题描述`+`分配任务说明`;附上图片链接;`需求来源`=PM 文件路径;`关联代码位置` 若用户没给就空着,planner 会补。
 - **tasks.md**:path 为 `docs/requirements/<别名>/`;追加一行:
-  - 需求ID=`<别名>`,项目=`产品/模块`,优先级/状态 照抄(无则占位),tier 先标**待定**,仓库=`<gitlab 仓库目录名>`(例 `iho-cssd-ui-mobile`),入口=`/pipeline <别名>`。
+  - 需求ID=`<别名>`,项目=`产品/模块`,优先级/状态 照抄(无则占位),tier 先标**待定**,仓库=`<repoRoot 下的仓库目录名>`(例 `example-repo`),入口=`/pipeline <别名>`。
 - **state.json**:requirement=`<别名>`;tier 照 tasks.md;phase=init;updatedAt=现在。
 - **decisions.md**:加一行 tier 判定(原因=难度/任务类型/是否动页面)。若 tier 不确定,留占位并按住键等我确认。
 - **file-lock.md**:若改动文件已知则登记;未知留空注明「待 planner 出 plan 后回填」。注意:同仓需求**不能并行**(共用主仓工作区),不同仓才能并行。

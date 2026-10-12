@@ -38,7 +38,7 @@
 
 **文档层现状（2026-10-10 复核）**：Hindsight 服务**已在跑**（`localhost:8888` 返回 200）。
 现有 6 个 bank，**全部是给需求流水线用的，没有一个是给助手用的**：
-`iho-nurse-manager-ui` / `multica-project` / `iho-aers-web` / `iho-cssd-ui` / `li-expertise` / `smoke-test`。
+`iho-nurse-manager-ui` / `febot-project` / `iho-aers-web` / `iho-cssd-ui` / `li-expertise` / `smoke-test`。
 
 另外，现有 hindsight 调用（`scripts/hindsight-memo.py`、`xiaoqian-manager/lib/server/hindsight/client.ts`）
 **全是「软降级」**——服务挂掉时静默返回空、不报错。这在流水线里是优点（不阻塞），但对助手是**陷阱**：
@@ -166,7 +166,7 @@
 | `assistant-<repo>`（每仓一个） | 该仓的业务知识、模块职责、术语、坑、历史决策                  | `assistant-iho-icis-ui`                |
 | `assistant-shared`             | **跨仓通用**：公司业务黑话与缩写、组织/角色含义、通用架构约定 | `mdm`=主数据、`icis`/`cssd` 是什么系统 |
 
-> **与现有 bank 分开**：`li-expertise`（人工评审口味）、`multica-project`（流水线约束）是**研发流程**记忆；
+> **与现有 bank 分开**：`li-expertise`（人工评审口味）、`febot-project`（流水线约束）是**研发流程**记忆；
 > `assistant-*` 是**业务知识**记忆。混在一起会互相污染检索。
 
 ### 4.2 存什么（触发条件 = 用户明说「存」）
@@ -317,7 +317,7 @@
 - **不 push、不改目标仓源码**——只读目标仓，产物只写 `docs/assistant/`。
 - **不把源码批量喂 LLM**——事实走索引器静态层；对话中允许按需 `Read` 少量文件补行号。
 - **敏感文件排除**：`.env*`、`token.temp`、`~/.ssh/*`、`~/.aws/*`；路径白名单校验。
-- **不与流水线 bank 混用**：`li-expertise` / `multica-project` 是研发流程记忆，别往里写业务知识。
+- **不与流水线 bank 混用**：`li-expertise` / `febot-project` 是研发流程记忆，别往里写业务知识。
 - **不自动入库**：只有用户明说才存（与旧「导师」框架的关键分界）。
 - **不做 Web UI**（本次形态已定为 Claude Code 内）。
 - **对外窗口（Web / 钉钉等平台）本期不做**——只在架构上留口子（见 §11），不实现、不排期。

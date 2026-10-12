@@ -5,7 +5,7 @@
  * 用法：node scripts/recon.mjs <别名>      例：node scripts/recon.mjs R-371467
  *
  * 数据源：code-indexer 的 `scan`（一次调用拿全量 ProjectMap），
- *         扫的是主仓 gitlab/<仓名>（改动也直接落在该仓工作区，不用 worktree）。
+ *         扫的是主仓 <repoRoot>/<仓名>（改动也直接落在该仓工作区，不用 worktree）。
  * 产出：docs/requirements/<别名>/recon.md（覆盖式，幂等）
  *
  * 本脚本不含任何 LLM 判断：只做采集与渲染。空白 = 索引器无产出，
@@ -31,6 +31,39 @@ const fail = msg => {
   process.exit(1);
 };
 
+// ---------- 配置 ----------
+
+/** 读 febot.config.json（不入库，由 yarn setup 生成） */
+function readConfig() {
+  const candidates = [
+    process.env.FEBOT_CONFIG ? path.resolve(process.env.FEBOT_CONFIG) : "",
+    path.join(ROOT, "febot.config.json"),
+    path.join(process.cwd(), "febot.config.json"),
+  ].filter(Boolean);
+  for (const p of candidates) {
+    if (!fs.existsSync(p)) continue;
+    let raw;
+    try {
+      raw = JSON.parse(fs.readFileSync(p, "utf8"));
+    } catch {
+      fail(`febot.config.json 不是合法 JSON：${p}`);
+    }
+    return { dir: path.dirname(p), raw: raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {} };
+  }
+  return null;
+}
+
+/** 目标仓根目录：配置里的 repoRoot（相对路径按配置文件所在目录解析），缺配置时退回 <仓库根>/gitlab */
+function reposRoot() {
+  const cfg = readConfig();
+  const raw = cfg?.raw?.repoRoot;
+  if (cfg && typeof raw === "string" && raw.trim()) {
+    const v = raw.trim();
+    return path.isAbsolute(v) ? v : path.resolve(cfg.dir, v);
+  }
+  return path.join(ROOT, "gitlab");
+}
+
 // ---------- 输入解析 ----------
 
 const alias = process.argv[2];
@@ -55,9 +88,13 @@ function section(md, title) {
 const reqTitle = section(context, "需求标题");
 const reqOneLiner = section(context, "需求描述（一句话）");
 
-// 第 5 列 = 仓库（gitlab/ 下的仓库目录名）。
+// 第 5 列 = 仓库（repoRoot 下的仓库目录名）。
 // 2026-10-12 前这里存的是 worktree 名 `<仓名>-<别名>`，改用主仓工作区后已退化为裸仓名。
-const tasksMd = fs.readFileSync(path.join(ROOT, "tasks.md"), "utf8");
+const tasksPath = path.join(ROOT, "tasks.md");
+if (!fs.existsSync(tasksPath)) {
+  fail(`tasks.md 不存在：${tasksPath}（请先跑 yarn setup 生成，或从 example/tasks.md 复制一份）`);
+}
+const tasksMd = fs.readFileSync(tasksPath, "utf8");
 const row = tasksMd
   .split(/\r?\n/)
   .find(l => l.startsWith("|") && l.split("|").map(s => s.trim())[1] === alias);
@@ -66,8 +103,10 @@ const repoName = row.split("|").map(s => s.trim())[5];
 if (!repoName || repoName === "-") fail(`empty repo column for ${alias} in tasks.md`);
 if (repoName.endsWith(`-${alias}`))
   fail(`repo column for ${alias} still holds a worktree name "${repoName}" — put the bare repo dir name instead`);
-const repoRoot = path.join(ROOT, "gitlab", repoName);
+const reposDir = reposRoot();
+const repoRoot = path.join(reposDir, repoName);
 if (!fs.existsSync(repoRoot)) fail(`repo dir not found: ${repoRoot}`);
+const repoLabel = path.relative(ROOT, repoRoot).replace(/\\/g, "/") || repoName;
 
 // ---------- 扫描 ----------
 
@@ -269,7 +308,7 @@ const L = [];
 L.push(`# ${alias} - 事实底稿（recon）`);
 L.push("");
 L.push(`> 由 \`node scripts/recon.mjs ${alias}\` 覆盖生成（确定性产出，无 LLM 判断）。`);
-L.push(`> 数据源：code-indexer scan 主仓 \`gitlab/${repoName}\`。**空白 = 索引器无产出，不等于该仓没有这段代码。**`);
+L.push(`> 数据源：code-indexer scan 主仓 \`${repoLabel}\`。**空白 = 索引器无产出，不等于该仓没有这段代码。**`);
 L.push("> 完整接口清单见同目录 `recon-endpoints.txt`（一行一条 `文件<TAB>METHOD<TAB>URL<TAB>fn`），本文件只放样例。");
 L.push("");
 L.push("## §0 探活与可索引判定");

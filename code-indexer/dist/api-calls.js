@@ -39,9 +39,9 @@ export function buildApiIndex(repoRoot, serviceDirRel, srcDirRel) {
     for (const e of entries) {
         if (e.isSymbolicLink())
             continue;
-        // api 域有两种形态：**目录**（icis / cssd-ui / nurse-manager）和
-        // **单文件**（haimis 的 api/common.ts、cssd-ui-mobile 的 api/*.ts）。
-        // 过去只认目录，haimis 整仓解析出 0 个域。
+        // api 域有两种形态：**目录**（example-sys / repo-a / repo-b）和
+        // **单文件**（repo-d 的 api/common.ts、repo-mobile 的 api/*.ts）。
+        // 过去只认目录，repo-d 整仓解析出 0 个域。
         if (e.isDirectory()) {
             const dirAbs = path.join(rootAbs, e.name);
             descs.push({
@@ -64,7 +64,7 @@ export function buildApiIndex(repoRoot, serviceDirRel, srcDirRel) {
     }
     // 内容式客户端识别：域文件 import 的、位于 api 域目录之外的模块，
     // 只要内容里调了 `axios.create(` 就算 http 客户端。
-    // 不按路径也不按名字猜 —— cssd-ui-mobile 的客户端在 `src/utils/request`，
+    // 不按路径也不按名字猜 —— repo-mobile 的客户端在 `src/utils/request`，
     // 根本不在 service 根下，按路径识别永远找不到。
     const outsideImports = new Set();
     for (const d of descs) {

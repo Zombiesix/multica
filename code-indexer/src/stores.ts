@@ -8,9 +8,9 @@ import { scanSymbols } from "./scan-symbols";
  * Pinia store 抽取。
  *
  * 实测三种形态，缺一不可：
- * - **对象式** `defineStore({ id, state, getters, actions })` —— icis / medical-ui / ehr-ui / cssd-ui
- * - **setup 式** `defineStore("id", () => { const a = ref(); return { a } })` —— haimis
- * - **模块级 reactive 单例** `export const x = reactive({ ... })` —— icis `store/qiankun.ts`
+ * - **对象式** `defineStore({ id, state, getters, actions })` —— example-sys / repo-e / repo-f / repo-a
+ * - **setup 式** `defineStore("id", () => { const a = ref(); return { a } })` —— repo-d
+ * - **模块级 reactive 单例** `export const x = reactive({ ... })` —— example-sys `store/qiankun.ts`
  *   （既不是 pinia 也不是 props 的隐藏全局状态）
  *
  * 两个反直觉点（不按这两个来会大面积漏）：
@@ -71,7 +71,7 @@ function ownerModuleOf(file: string, pageDirsRel: string[]): string | null {
 /**
  * 持久化配置。两个插件形状不同，都要认：
  * - `pinia-plugin-persistedstate`：`persist: true` 或 `persist: { key, storage, paths }`
- * - `pinia-plugin-persist`（icis 在用）：`persist: { enabled, strategies: [{ key, storage, paths }] }`
+ * - `pinia-plugin-persist`（example-sys 在用）：`persist: { enabled, strategies: [{ key, storage, paths }] }`
  *
  * 读不到就返回 null —— **不要拿 store id 兜底**，那等于编造一个不存在的 key。
  */

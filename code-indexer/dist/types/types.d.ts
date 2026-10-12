@@ -13,7 +13,7 @@ export interface RepoStack {
     routerFile: string | null;
     /**
      * **所有**存在的页面目录，按优先级排序。
-     * 过去只取第一个 —— icis 同时有 `src/page`（12 个模块）和 `src/view`（5 个），
+     * 过去只取第一个 —— example-sys 同时有 `src/page`（12 个模块）和 `src/view`（5 个），
      * 后者整片页面被当成"不属于任何模块"。
      */
     pageDirs: string[];
