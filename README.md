@@ -1,11 +1,34 @@
-# multica / AgentTeam 前端研发流水线
+# multica / AgentTeam 前端研发工作区
 
-`d:\multica` 是一条**前端需求研发的完整流水线工作区**。它把「获取需求 → AI 写代码 → 人工测试 → 提交合并 → 填工时」串成一个闭环，由两个部分配合完成：
+`d:\multica` 是一个**前端研发工作区**，里面有两条**互相独立**的主线，共用一个「看代码 + 记知识」的底座：
 
-1. **xiaoqian-manager（小千管理）** —— 可视化 Web 项目，是**整个流程的宿主**。需求获取、人工测试、提交合并、填工时都在这里点，`小前端` 是操作人/研发人。
-2. **AgentTeam** —— 核心 AI 编码引擎。需求里的"规划 + 写代码 + 审查 + 修复"两大步由它基于 Claude Code subagent 三层隔离完成，通过文件落盘驱动。
+| 主线                         | 干什么                                                   | 入口                                                       | 谁在用           |
+| ---------------------------- | -------------------------------------------------------- | ---------------------------------------------------------- | ---------------- |
+| **① 研发流水线**（6 步闭环） | 获取需求 → AI 写代码 → 人工测试 → 提交合并 → 填工时      | [xiaoqian-manager](xiaoqian-manager/)（宿主）+ `/pipeline` | 小前端           |
+| **② 业务助手 assistant**     | 随时问业务：这个模块干嘛的、这个字段谁改的、权限在哪判的 | Claude Code 内 `/assistant`                                | 任何要懂业务的人 |
+
+两条线**不互调、不共享 bank**，但都站在同一层底座上：
+
+```text
+       ① 研发流水线                        ② 业务助手 assistant
+   (xiaoqian-manager + AgentTeam)          (/assistant skill)
+              │                                   │
+              └──────────────┬────────────────────┘
+                             ▼
+        ┌────────────────────────────────────────────────┐
+        │ 事实层 code-indexer（现算，不落盘）              │
+        │ 记忆层 Hindsight :8888（按内容分 bank，互不污染）│
+        └────────────────────────────────────────────────┘
+```
+
+- **事实层**：`code-indexer` 静态索引器 —— 路由 / 组件树 / API 域 / store / 事件 / 权限 / 存储。
+- **记忆层**：本机 Docker 里的 Hindsight（见第四部分 §12–§15）—— 流水线存「研发流程经验」，助手存「业务知识」，**两套 bank 分开**。
+
+其余：`swagger-mcp-server`（实时 API 文档）供流水线用；[om/](om/) 是**独立**的发版看板，不参与任何主线。
 
 ---
+
+# 第一部分：研发流水线（①）
 
 ## 1. 总流程：一条 6 步流水线（宿主 = xiaoqian-manager）
 
@@ -85,54 +108,106 @@
 
 ---
 
-## 3. 周边工具（喂给 ②③ 步的"眼睛"）
+# 第二部分：业务助手 assistant（②）
 
-AgentTeam 在规划/写码时靠这两个工具洞察陌生代码：
+## 3. 它是什么
 
-| 工具                   | 干什么                                                                                                                                                    | 怎么跑                                      |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **code-indexer**       | Vue3 仓库静态索引器：扫目标仓生成 ProjectMap（路由/模块/API 域/组件图/告警），CLI 或 stdio MCP 供 Agent 消费                                              | `node bin/cli.mjs <cmd> <repo>`             |
-| **swagger-mcp-server** | swagger-multi MCP **补丁版**服务器（修复 URL 解析截断、非法 JSON 两个 bug），覆盖 nursing(10 分组)/icis/treat/cssd 共 13 个服务，给 Agent 喂实时 API 文档 | 配置写入用户全局 `~/.claude.json`，重启生效 |
+在 Claude Code 里随时叫起来的**业务助手**：**问什么答什么、说存才存、答不上就说答不上**。
+给人（懂技术但不懂公司业务）解答业务，**不做任何主动行为**。
 
----
+| 职责           | 怎么用                                       | 行为                                                        |
+| -------------- | -------------------------------------------- | ----------------------------------------------------------- |
+| **① 答业务**   | `/assistant 导管管理是干嘛的`                | 先查已存结论(recall)，未命中走索引器**现算** → 用人话直接答 |
+| **② 存文档**   | 明说「把这条存进 iho-icis-ui」               | 才落进 Hindsight，带溯源元数据(evidence/repo/module/date)   |
+| **③ 查看清理** | `/assistant status` / `list` / `delete <id>` | 一眼看出「到底存没存进去」                                  |
 
-## 4. 目录约定
+**它不做**：不主动讲解、不追问、不做考试式提问、不自动入库、不改目标仓源码、不起 Web UI。
 
-分两层：**multica 家**（本目录，AgentTeam 会话开在这）与 **worktree**（产品仓内，纯代码）。
+入口 skill：[.claude/skills/assistant/SKILL.md](.claude/skills/assistant/SKILL.md)；
+配套 subagent（答案会很长时隔离上下文用）：[.claude/agents/assistant-qa.md](.claude/agents/assistant-qa.md)。
 
-**multica 家 `d:\multica`**
+### 两条铁律
 
-```text
-project-map.md          平台产品 → gitlab 仓库映射(张三维护,喂食用)
-tasks.md                需求元信息表(含 tier)
-file-lock.md            并行冲突仲裁表
-package.json            工作区脚本(如 `yarn om` 启动发版看板)
-docs/requirements/
-  _template/            10+ 个空白模板,喂食从这里复制
-  <R-xxxxx>/            context.md questions.md answers.md plan.md
-                        decisions.md progress.md review.md review-fix.md
-                        test-report.md worklog.md orchestrator-log.md
-                        state.json
-xiaoqian-manager/       小千管理(Next.js) —— 全部流程的宿主(①④⑤⑥)
-code-indexer/   Vue3 仓库静态索引器(CLI + MCP),②③步用
-swagger-mcp-server/     swagger-multi MCP 补丁版服务器,②③步用
-om/                     发版看板(独立,见 §7)
+- **铁律一 · 事实现算**：路由表 / 组件树 / API 清单 / 端点会随代码变 → **一律现算、不入库**。
+  只有「为什么这么设计 / 字段的业务含义 / 命名背后的黑话 / 历史决策与坑」才值得存。
+- **铁律二 · 只说人话**：答的是**业务答案**，不是代码导读。不贴大段代码、不用执行顺序组织答案、不堆变量名。
+  代码出处（`文件:行`）只作依据，**附在末尾**，不挡正文。
+
+## 4. 三层粒度 → 三种手段
+
+| 粒度       | 手段                                                                        | 产物                                                                   |
+| ---------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **项目**   | `yarn assistant:map gitlab/<仓>`（等价 `/assistant init <仓>`）             | `docs/assistant/<仓>/map.md`（**时点快照**，可能过期，权威以现算为准） |
+| **模块**   | `trace` / `trace-state` / `trace-event` / `channels` / `modules` / `search` | 不落盘，当场答                                                         |
+| **文件夹** | 助手**按需 `Read`** 少量源码（必要时先 `trace` 缩小范围）                   | **不产出任何持久文档**；值得留的由你说 `store`                         |
+
+> 文件夹粒度**不接 `folder-docs`**：那会把产物写进目标仓（违反「只读目标仓」边界），且是会过期的派生物，与铁律一相冲。
+
+## 5. 命令速查
+
+```bash
+# 事实层（现算，不落盘）—— 索引器 CLI
+node code-indexer/bin/cli.mjs map    gitlab/<仓>              # 项目全貌
+node code-indexer/bin/cli.mjs trace  gitlab/<仓> <模块|路由>    # 业务链路:路由→组件树→API→store/事件/权限/存储
+node code-indexer/bin/cli.mjs trace-state gitlab/<仓> <store>[.<字段>]
+node code-indexer/bin/cli.mjs trace-event gitlab/<仓> <组件> <事件>
+node code-indexer/bin/cli.mjs channels gitlab/<仓> --kind permission|storage
+node code-indexer/bin/cli.mjs modules gitlab/<仓> [<模块>]
+node code-indexer/bin/cli.mjs search  gitlab/<仓> <词>
+node code-indexer/bin/cli.mjs stats   gitlab/<仓>              # 探活
+
+# 文档层（Hindsight 记忆）
+yarn assistant:memo status --all
+yarn assistant:memo recall --bank assistant-iho-icis-ui --query "导管管理 命名"
+yarn assistant:memo retain --bank assistant-iho-icis-ui --content "<结论>" \
+     --repo iho-icis-ui --module conduit-manage --evidence src/x.ts:6 --date 2026-10-10
+yarn assistant:memo list   --bank assistant-iho-icis-ui --repo iho-icis-ui --days 7
+yarn assistant:memo patch  --bank <bank> --id <id> --text "<改后的结论>"
+yarn assistant:memo delete --bank <bank> --id <id>     # 软退休(可逆，仍可 restore)
+yarn assistant:memo restore --bank <bank> --id <id>
+yarn assistant:memo clear  --bank <bank> --yes         # ⚠️ 清空整个 bank
+
+# 自检
+yarn assistant:probe        # 端到端探针(可加 --reset)
+yarn assistant:map gitlab/<仓>
 ```
 
-**worktree（纯代码工作区）**
+> Git Bash 下以 `/` 开头的参数会被 MSYS 转成 Windows 路径，需要时加 `MSYS_NO_PATHCONV=1` 前缀。
 
-- 建在 `gitlab/<project-map 仓库目录>/` 下（与 multica 同级的 `gitlab/` 目录），只被 coder 读写；不进流程状态、不复制 `.claude/`、不复制 `docs/`。
-- **基准分支（固定规则）**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`(非 master)。worktree 基于该分支创建，收尾合并回该分支（**本地合并，见 §1 边界**）。
+## 6. 边界（硬规矩）
 
-**archive/（历史归档,禁区）**
+- **只读目标仓**，产物只写 `docs/assistant/`；不 push、不改目标仓源码。
+- 不把源码批量喂 LLM；对话中只按需 `Read` 少量文件补行号。
+- 不读敏感文件：`.env*`、`token.temp`、`~/.ssh/*`、`~/.aws/*`。
+- **不与流水线 bank 混用**：`li-expertise` / `multica-project` 是研发流程记忆，业务知识写 `assistant-*`。
+- 事实每次现算，`docs/assistant/` 下的地图只是快照。
+- **文档层挂掉时不许静默**：Hindsight 不可达 → CLI 硬报错（非 0 退出）；此时仍要答题（事实层不依赖 Hindsight），但必须显式说明「文档层不可用，以下结论没有引用已存记忆」。
 
-- 存放已废弃的设计草稿。**仅供人工翻阅,禁止任何 agent 读/写,或作为当前需求依据。**
-- 三道防线：`.gitignore` 排除 + `.claude/settings.json` deny 规则(拦 Read/Write/Edit/Glob) + agent prompt 明令不读。改动 archive 需先临时调整 `settings.json` deny 再改。
-- 若要给 archive 加说明文档，放本 README 或 `docs/` 下。
+## 7. 排错与注意
+
+| 现象                         | 原因 / 怎么办                                                                                                         |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `✗ Hindsight 不可达`         | 容器没起。`docker ps --filter name=hindsight`；此时**存不进也查不到**，别当成「本来就没结论」                         |
+| 存完立刻 `list` 只见 1 条    | 派生条(observation)是**异步**的，稍等再看；`status` 的「待整理」数字会告诉你还有多少在排队                            |
+| 答案里没有 `文件:行`         | 该条是**没带 evidence 的旧数据**；`list` 翻到它补 `--evidence`，或用 `patch` 补                                       |
+| 索引器对某仓返回 0 路由/端点 | **先别接助手**。跑 `stats` + `warnings` 核对，为 0 且无解释时先补索引器（否则助手会说「这个模块没有接口」= 静默撒谎） |
+| 目标仓是 Vue2                | 索引器目前只支持 Vue3，需另做适配器                                                                                   |
 
 ---
 
-## 5. xiaoqian-manager 各项功能对应的代码位置
+# 第三部分：底座与周边
+
+## 8. 周边工具（喂给两条主线的"眼睛"）
+
+| 工具                   | 干什么                                                                                                                                                    | 谁用                   | 怎么跑                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------- |
+| **code-indexer**       | Vue3 仓库静态索引器：扫目标仓生成 ProjectMap（路由/模块/API 域/组件图/告警），CLI 或 stdio MCP 供 Agent 消费                                              | 流水线 ②③ + 助手事实层 | `node bin/cli.mjs <cmd> <repo>`             |
+| **swagger-mcp-server** | swagger-multi MCP **补丁版**服务器（修复 URL 解析截断、非法 JSON 两个 bug），覆盖 nursing(10 分组)/icis/treat/cssd 共 13 个服务，给 Agent 喂实时 API 文档 | 流水线 ②③ 仅           | 配置写入用户全局 `~/.claude.json`，重启生效 |
+| **Hindsight**          | 本机 Docker 记忆系统（API :8888 / UI :9999），两条主线共用实例、**bank 分开**                                                                             | 流水线 + 助手          | 见第四部分 §12–§15                          |
+
+> 现在只有 code-indexer 是**两条线共用**的；索引器属于「只读、纯静态」，谁查都不落盘。
+
+## 9. xiaoqian-manager 各项功能对应的代码位置
 
 | 总流程步骤             | 触发点                             | 实现位置                                                                                 |
 | ---------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -142,9 +217,54 @@ om/                     发版看板(独立,见 §7)
 | ⑤ 提交合并             | deploy 阶段 选仓库+目标分支 点完成 | `lib/server/git/deploy.ts`(pull→commit→push→cherry-pick→push)                            |
 | ⑥ 填工时               | 工时入口                           | `lib/server/teamwork/client.ts` 的 `saveWorkHours`                                       |
 
----
+## 10. 目录约定
 
-## 6. 门禁清单 + 全局约束
+分两层：**multica 家**（本目录，AgentTeam / assistant 会话都开在这）与 **worktree**（产品仓内，纯代码）。
+
+**multica 家 `d:\multica`**
+
+```text
+.claude/
+  commands/pipeline.md      流水线剧本（①的②③步）
+  agents/{planner,coder,reviewer}.md    流水线 subagent
+  agents/assistant-qa.md                助手问答 subagent（答案长时用）
+  skills/pipeline-feed/                 喂食 skill
+  skills/assistant/                     助手入口 skill + references/{service-protocol,what-to-store}.md
+project-map.md            平台产品 → gitlab 仓库映射(张三维护,喂食用)
+tasks.md                  需求元信息表(含 tier)
+file-lock.md              并行冲突仲裁表
+package.json              工作区脚本(`yarn om` / `assistant:*` 等)
+docs/requirements/
+  _template/              10+ 个空白模板,喂食从这里复制
+  <R-xxxxx>/              context.md questions.md answers.md plan.md
+                          decisions.md progress.md review.md review-fix.md
+                          test-report.md worklog.md orchestrator-log.md
+                          state.json
+docs/assistant/<仓>/map.md   助手项目地图（生成物，时点快照）
+docs/assistant-*.md          助手的设计计划 / 实施步骤 / 使用说明
+docs/hindsight-*.md          Hindsight 方案与接入
+scripts/recon.mjs            流水线事实底稿
+scripts/hindsight-memo.py    流水线侧记忆 CLI
+scripts/assistant-{memo,map,probe}.mjs   助手侧记忆 CLI / 地图 / 探针
+xiaoqian-manager/        小千管理(Next.js) —— 全部流程的宿主(①④⑤⑥)
+code-indexer/            Vue3 仓库静态索引器(CLI + MCP),两条线共用
+swagger-mcp-server/      swagger-multi MCP 补丁版服务器,②③步用
+om/                      发版看板(独立,见 §16)
+```
+
+**worktree（纯代码工作区）**
+
+- 建在 `gitlab/<project-map 仓库目录>/` 下（与 multica 同级的 `gitlab/` 目录），只被 coder 读写；不进流程状态、不复制 `.claude/`、不复制 `docs/`。
+- **基准分支（固定规则）**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`(非 master)。worktree 基于该分支创建，收尾合并回该分支（**本地合并，见 §1 边界**）。
+- 助手**只读** `gitlab/<仓>`：不建 worktree、不写任何文件。
+
+**archive/（历史归档,禁区）**
+
+- 存放已废弃的设计草稿。**仅供人工翻阅,禁止任何 agent 读/写,或作为当前需求依据。**
+- 三道防线：`.gitignore` 排除 + `.claude/settings.json` deny 规则(拦 Read/Write/Edit/Glob) + agent prompt 明令不读。改动 archive 需先临时调整 `settings.json` deny 再改。
+- 若要给 archive 加说明文档，放本 README 或 `docs/` 下。
+
+## 11. 门禁清单 + 全局约束（流水线适用）
 
 ### 门禁清单（每次跑都要盯）
 
@@ -172,38 +292,13 @@ om/                     发版看板(独立,见 §7)
 
 ---
 
-## 7. 项目全景
+# 第四部分：Hindsight 记忆系统
 
-### 流程链（协作）
+> 两条主线共用同一个 Hindsight 实例，**按 bank 分开**，互不污染检索。
+> 给流水线加"学习型记忆"：人工的拍板、纠正、否决理由沉淀为 Agent 可检索记忆，让第 N+1 个需求吃到前 N 个的人工经验。
+> 方案文档见 [docs/hindsight-实施方案.md](docs/hindsight-实施方案.md) / [docs/hindsight-接入方案.md](docs/hindsight-接入方案.md)。
 
-`xiaoqian-manager`(宿主) ↔ `AgentTeam`(`/pipeline` 剧本 + 4 subagent + pipeline-feed skill) ↔ `code-indexer` / `swagger-mcp-server`(②③步的眼睛)
-
-### 独立项目（不参与总流程）
-
-| 项目       | 是什么                                                                                            | 状态                          |
-| ---------- | ------------------------------------------------------------------------------------------------- | ----------------------------- |
-| [om/](om/) | 发版看板：按后端人员分组跟踪各前端项目发版（打包状态/版本号/进度），纯本地，数据在 `om/data.json` | 独立部署（`yarn om` → :3000） |
-
----
-
-## 8. 定制
-
-- **改 agent 行为**：编辑 `.claude/agents/*.md`（工具/权限/maxTurns prompt）。
-- **改流程剧本**：编辑 `.claude/commands/pipeline.md`（委派话术、阶段、轨道约束）。
-- **改喂食逻辑**：编辑 `.claude/skills/pipeline-feed/SKILL.md`。
-- **改模板**：编辑 `docs/requirements/_template/*`。
-- **改 ①④⑤⑥**：编辑 `xiaoqian-manager/`（`lib/server/git`、`lib/server/teamwork`、`components`）。
-- 三个 agent 统一 `permission: acceptEdits`，如要更严，单独收紧。
-
----
-
-## 9. Hindsight 记忆系统（Phase 1 已上线）
-
-> 给 6 步流水线加"学习型记忆"：人工的拍板、纠正、否决理由沉淀为 Agent 可检索记忆，
-> 让第 N+1 个需求吃到前 N 个的人工经验。方案文档见
-> [docs/hindsight-实施方案.md](docs/hindsight-实施方案.md)。
-
-### 架构（本机 Docker 一容器搞定）
+## 12. 架构（本机 Docker 一容器搞定）
 
 ```text
 ┌─ Docker 容器 hindsight:slim（API :8888 / UI :9999，--restart unless-stopped）┐
@@ -213,13 +308,25 @@ om/                     发版看板(独立,见 §7)
 │   Reranker = rrf（纯算法，零外部依赖）                                        │
 └──────────┬───────────────────────────────────────────────────────────────────┘
            │ REST :8888
-  ┌────────┴──────────────────────────────────────────┐
-  │ AgentTeam 侧: scripts/hindsight-memo.py（CLI 三命令）│
-  │ Web 侧: xiaoqian-manager/lib/server/hindsight/client.ts │
-  └─────────────────────────────────────────────────────┘
+  ┌────────┴──────────────────────────────────────────────────────┐
+  │ 流水线侧: scripts/hindsight-memo.py（软降级，绝不拦流程）      │
+  │          xiaoqian-manager/lib/server/hindsight/client.ts       │
+  │ 助手侧:   scripts/assistant-memo.mjs（硬报错，怕"以为存了"）   │
+  └───────────────────────────────────────────────────────────────┘
 ```
 
-### 部署步骤（已完成，2026-10-08）
+### Bank 划分（两套，勿混）
+
+| bank                               | 属于   | 存什么                                                |
+| ---------------------------------- | ------ | ----------------------------------------------------- |
+| `li-expertise` / `multica-project` | 流水线 | 人工评审口味、流水线静态规矩（约束/分支/提交规范）    |
+| `iho-cssd-ui` 等产品线 bank        | 流水线 | 产品线维度经验                                        |
+| `assistant-<repo>`                 | 助手   | 该仓的业务知识、模块职责、术语、坑、历史决策          |
+| `assistant-shared`                 | 助手   | 跨仓通用：业务黑话/缩写、组织与角色含义、通用架构约定 |
+
+> 助手**绝不往流水线 bank 写业务知识**，反之亦然——混在一起会互相污染检索。
+
+## 13. 部署步骤（已完成，2026-10-08）
 
 1. `yarn setup` —— 自动生成 `scripts/hindsight.env`（从 [hindsight.env.example](scripts/hindsight.env.example) 复制，模板已入库），填入你的 Ark Plan Key + SiliconFlow Key
 2. `docker pull ghcr.nju.edu.cn/vectorize-io/hindsight:latest-slim`（ghcr.io 被墙，用南大镜像）
@@ -227,6 +334,7 @@ om/                     发版看板(独立,见 §7)
 4. `python scripts/ensure-banks.py`（建 li-expertise / multica-project / iho-cssd-ui 3 库 + 预填 5 条静态规矩）
 
 > 模板里每个变量都有注释说明来源和注意事项；key 只留本地 `hindsight.env`，已被 gitignore。
+> 助手侧的 `assistant-<repo>` / `assistant-shared` bank 按需建立，不用预先跑脚本。
 
 重启电脑后 Docker Desktop 自启 → 容器自动拉起，无需人工干预。
 
@@ -253,25 +361,77 @@ om/                     发版看板(独立,见 §7)
 | recall  | `POST /v1/default/banks/{bank_id}/memories/recall` | `{"query":"...","budget":"low"}`                |
 | reflect | `POST /v1/default/banks/{bank_id}/reflect`         | `{"query":"..."}`                               |
 
-### 接入点（已接线）
+> 助手侧实测补充（2026-10-10，详见 [scripts/assistant-probe.mjs](scripts/assistant-probe.mjs) 头注释）：
+> 一条 retain 落 **2 条**（world + 派生 observation），`metadata` 只在 world 上、派生条为空，`tags` 两条都在；
+> `tags_match` 默认 `any` 会捞出无标签条目，要「只要该 tag」必须显式传 `all_strict`；
+> `delete` 单条 = `PATCH {"state":"invalidated"}`（可逆），**`DELETE {bank}/memories` 是清空整库**。
+
+## 14. 接入点（已接线）
+
+**流水线侧**
 
 - **pipeline.md**：init recall / decisions retain / done reflect 人工门禁 / fixing retain / reviewer 画像
 - **planner.md**：记忆冲突 → 升级为 M1/M2 编号问题
 - **reviewer.md**：口味符合度 + 重复问题标记
 - **stage/route.ts**：⑤ deploy 成功 → retain「已部署」状态
-- 全程软降级：Hindsight 没起 → 返回空/跳过，绝不禁流水线
+- 全程**软降级**：Hindsight 没起 → 返回空/跳过，绝不禁流水线
 
-### 下一步（Phase 2）
+**助手侧**
+
+- **assistant skill**：答题前 recall 已存结论 → 未命中走索引器现算；`store` 才 retain；`status`/`list`/`delete` 做查看与清理
+- `scripts/assistant-{memo,map,probe}.mjs` 三个 CLI 承载全部读写
+- 刻意**硬报错**：怕「以为在存其实没存」，不可达就非 0 退出 + 明说文档层不可用
+
+## 15. 下一步
+
+### Phase 2（流水线）
 
 1. 跑一个真实需求走完整流水线，验证各阶段 recall/retain 是否按预期触发
 2. 观察 recall 命中率，必要时调 budget 档位
 3. 拍板 retain 积累 ≥10 条后，评估是否开 ◇ 线（①④⑥ 可选阶段）
+
+### 助手层
+
+P0–P4 已实施完毕（记忆 CLI / 项目地图 / 答题 skill / 按需存 / 端到端验收）。
+设计原因见 [docs/assistant-agent-建设计划.md](docs/assistant-agent-建设计划.md)，分步做法见 [docs/assistant-agent-实施步骤.md](docs/assistant-agent-实施步骤.md)，
+给同事看的操作手册见 [docs/assistant-使用说明.md](docs/assistant-使用说明.md)。对外窗口本期不做，只留口子。
+
+---
+
+# 第五部分：全景与定制
+
+## 16. 项目全景
+
+### 流程链（协作）
+
+`xiaoqian-manager`(宿主) ↔ `AgentTeam`(`/pipeline` 剧本 + 4 subagent + pipeline-feed skill) ↔ `code-indexer` / `swagger-mcp-server`(②③步的眼睛)
+
+### 助手链（独立）
+
+`/assistant` skill (+ `assistant-qa` subagent) ↔ `code-indexer`(事实层，现算) ↔ `Hindsight`(文档层，`assistant-*` bank)
+
+### 独立项目（不参与总流程）
+
+| 项目       | 是什么                                                                                            | 状态                          |
+| ---------- | ------------------------------------------------------------------------------------------------- | ----------------------------- |
+| [om/](om/) | 发版看板：按后端人员分组跟踪各前端项目发版（打包状态/版本号/进度），纯本地，数据在 `om/data.json` | 独立部署（`yarn om` → :3000） |
+
+## 17. 定制
+
+- **改 agent 行为**：编辑 `.claude/agents/*.md`（工具/权限/maxTurns prompt）。
+- **改流程剧本**：编辑 `.claude/commands/pipeline.md`（委派话术、阶段、轨道约束）。
+- **改喂食逻辑**：编辑 `.claude/skills/pipeline-feed/SKILL.md`。
+- **改模板**：编辑 `docs/requirements/_template/*`。
+- **改 ①④⑤⑥**：编辑 `xiaoqian-manager/`（`lib/server/git`、`lib/server/teamwork`、`components`）。
+- **改助手行为**：编辑 `.claude/skills/assistant/SKILL.md`（编排）、`references/service-protocol.md`（答话协议）、`references/what-to-store.md`（存/不存判断）、`.claude/agents/assistant-qa.md`（隔离上下文）。
+- 三个流水线 agent 统一 `permission: acceptEdits`，如要更严，单独收紧。
 
 ---
 
 ## 附：project-map / 平台产品 → gitlab 仓库 映射
 
 > AgentTeam 喂食时据 PM 卡的「产品/模块 + 客户 + 标题关键词」查此表，决定 worktree 建在哪个 gitlab 仓库下。**由 张三 维护确认,AI 不猜。**
+> 助手也用同一张表定位目标仓（只读）。
 
 | 平台产品/模块        | 判断规则(标题关键词)              | 命中 → gitlab 仓库目录      | jenkins job      |
 | -------------------- | --------------------------------- | --------------------------- | ---------------- |
