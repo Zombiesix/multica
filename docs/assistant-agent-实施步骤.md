@@ -29,7 +29,6 @@
 │    trace-event/state      事件/store     │  │    list     → 翻看                        │
 │    channels/modules      通道/模块关系    │  │    delete   → 清理                        │
 │    search/warnings/stats    检索/探活     │  │                                          │
-│  （不接 folder-docs）                      │  │                                          │
 │                                          │  │  bank:  assistant-<repo>                  │
 │  纯静态 · 不喂 LLM · 结果不落盘            │  │         assistant-shared                  │
 └───────────────────┬──────────────────────┘  └───────────────────┬──────────────────────┘
@@ -100,10 +99,10 @@ multica/
 | P0-5 | 文档层 | `/assistant status` 骨架（显式报在线，**不许静默**）        | status 入口                    |
 | P1-1 | 事实层 | skill `init`：跑 `map` 出项目地图                           | `docs/assistant/<repo>/map.md` |
 | P1-2 | 事实层 | 地图渲染成中文骨架（业务名 map 已带 `label`，缺的留空待补） | 同上                           |
-| P1-3 | 事实层 | 文件夹粒度定成按需 `Read`（**不接 folder-docs**）           | 无新文件                       |
+| P1-3 | 事实层 | 文件夹粒度定成按需 `Read`                                   | 无新文件                       |
 | P1-4 | 事实层 | `warnings` 降级为可选展示（不做提问队列）                   | `--warnings` 开关              |
 | P2-1 | 助手层 | 写 `SKILL.md`（入口剧本）                                   | skill                          |
-| P2-2 | 助手层 | 写 `references/service-protocol.md`（只答不问）                     | 协议                           |
+| P2-2 | 助手层 | 写 `references/service-protocol.md`（只答不问）             | 协议                           |
 | P2-3 | 助手层 | 答题流程：先 `recall`，再事实现算，最后合并                 | 流程                           |
 | P2-4 | 助手层 | `store` 指令：说存就存                                      | 流程                           |
 | P2-5 | 助手层 | （可选）抽 `assistant-qa` subagent                          | agent.md                       |
@@ -117,22 +116,22 @@ multica/
 
 ### 1.1 执行记录（2026-10-10 一次走完 P0–P4）
 
-| # | 状态 | 产物 / 证据 |
-| - | ---- | ----------- |
-| P0-1 | ✅ | 建 `assistant-shared` / `assistant-iho-icis-ui` / `assistant-probe` 三个 bank（PUT 幂等） |
-| P0-2 | ✅ | `scripts/assistant-probe.mjs`；`yarn assistant:probe` 全绿。**4 处契约被实测推翻**，见文末附录 |
-| P0-3 | ✅ | `scripts/assistant-memo.mjs`：recall/retain/list/patch/delete/restore/clear/stats/status/health，**硬报错**非软降级 |
-| P0-4 | ✅ | 根 `package.json` 挂 `assistant:probe` / `assistant:memo` / `assistant:map` |
-| P0-5 | ✅ | `assistant-memo.mjs status [--bank B \| --all]`：服务停掉时打 ⚠️ 且 exit 1（已用死端口复验） |
-| P1-1/1-2 | ✅ | `scripts/assistant-map.mjs`；已出 `docs/assistant/iho-icis-ui/map.md`（路由 11 / 端点 161 / 模块 16）与 `docs/assistant/iho-cssd-ui/map.md`（路由 14 / 端点 237 / 模块 14） |
-| P1-3 | ✅ | 写进 `SKILL.md` §3：`folder` 分支按需 `Read`，不接 folder-docs、目标仓零新增文件 |
-| P1-4 | ✅ | `warnings` 默认只出计数；`assistant-map.mjs --warnings` 才展开 |
-| P2-1~2-4 | ✅ | `.claude/skills/assistant/SKILL.md` + `references/service-protocol.md` + `references/what-to-store.md`（skill 已注册、可调起） |
-| P2-5 | ✅ | `.claude/agents/assistant-qa.md` |
-| P3-1~3-4 | ✅ | CLI 已含 list / patch / delete / status；分发写在 `SKILL.md` §1 |
-| P4-1 | ✅ | 存「导管管理三处命名不一致」→ **独立进程** recall 命中，带 `ev:` 出处 |
-| P4-2 | ✅ | `iho-cssd-ui` 冷启动：不改一行代码出地图 |
-| P4-3 | ✅ | `docs/assistant-使用说明.md` |
+| #        | 状态 | 产物 / 证据                                                                                                                                                                 |
+| -------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0-1     | ✅   | 建 `assistant-shared` / `assistant-iho-icis-ui` / `assistant-probe` 三个 bank（PUT 幂等）                                                                                   |
+| P0-2     | ✅   | `scripts/assistant-probe.mjs`；`yarn assistant:probe` 全绿。**4 处契约被实测推翻**，见文末附录                                                                              |
+| P0-3     | ✅   | `scripts/assistant-memo.mjs`：recall/retain/list/patch/delete/restore/clear/stats/status/health，**硬报错**非软降级                                                         |
+| P0-4     | ✅   | 根 `package.json` 挂 `assistant:probe` / `assistant:memo` / `assistant:map`                                                                                                 |
+| P0-5     | ✅   | `assistant-memo.mjs status [--bank B \| --all]`：服务停掉时打 ⚠️ 且 exit 1（已用死端口复验）                                                                                |
+| P1-1/1-2 | ✅   | `scripts/assistant-map.mjs`；已出 `docs/assistant/iho-icis-ui/map.md`（路由 11 / 端点 161 / 模块 16）与 `docs/assistant/iho-cssd-ui/map.md`（路由 14 / 端点 237 / 模块 14） |
+| P1-3     | ✅   | 写进 `SKILL.md` §3：`folder` 分支按需 `Read`，不接 folder-docs、目标仓零新增文件                                                                                            |
+| P1-4     | ✅   | `warnings` 默认只出计数；`assistant-map.mjs --warnings` 才展开                                                                                                              |
+| P2-1~2-4 | ✅   | `.claude/skills/assistant/SKILL.md` + `references/service-protocol.md` + `references/what-to-store.md`（skill 已注册、可调起）                                              |
+| P2-5     | ✅   | `.claude/agents/assistant-qa.md`                                                                                                                                            |
+| P3-1~3-4 | ✅   | CLI 已含 list / patch / delete / status；分发写在 `SKILL.md` §1                                                                                                             |
+| P4-1     | ✅   | 存「导管管理三处命名不一致」→ **独立进程** recall 命中，带 `ev:` 出处                                                                                                       |
+| P4-2     | ✅   | `iho-cssd-ui` 冷启动：不改一行代码出地图                                                                                                                                    |
+| P4-3     | ✅   | `docs/assistant-使用说明.md`                                                                                                                                                |
 
 **与计划书的差异（都是实测逼出来的，不是口味选择）**：
 
@@ -255,10 +254,7 @@ node code-indexer/bin/cli.mjs map <目标仓的绝对/相对路径>
 
 ---
 
-### P1-3 文件夹粒度：按需 `Read`（**不接 `folder-docs`**）
-
-**不做什么**：不跑 `folder-docs` skill。它的产物写进目标仓（文件夹同级 `README.md` + 源码注释），
-违反「只读目标仓」边界；且是会过期的派生物，与铁律一相冲。
+### P1-3 文件夹粒度：按需 `Read`
 
 **改**：`SKILL.md` 加 `/assistant folder <路径>` 分支 —— 直接 `Read` 该文件夹（必要时先 `trace` 缩小范围），
 当场用业务语言答；值得留的由用户 `store` 进 Hindsight，**不落派生文档**。
@@ -393,24 +389,25 @@ tags         GET    {BASE}/{bank}/tags
 
 ### 实测修订（2026-10-10，推翻了原设计的 4 条假设）
 
-| # | 原假设 | 实测 | 后果 |
-| - | ------ | ---- | ---- |
-| 1 | `delete` = `DELETE {bank}/memories` 删单条 | 那是**清空整库**（`{"deleted_count":N}`，不可逆） | 删单条改用 `PATCH {"state":"invalidated"}`：软退休、list/recall 均排除、`state=valid` 可恢复 |
-| 2 | 溯源元数据拼进 `context` 字符串 | 一条 retain 落 **2 个 unit**：`world` + 派生 `observation`；`context`/`metadata` **只在 world 上有**，observation 上恒为空；`context` 更是时有时无 | 溯源进 `metadata`（逐字存活，且 recall 也回传）；**出处再冗余写一份进 tags**（`ev:<文件:行>`）才能跟着派生条走 |
-| 3 | `patch` 字段是 `content` | 字段名是 **`text`** | CLI 以 `--text` 为准，`--content` 仅作兼容别名 |
-| 4 | `tags` 过滤能力待验 | **服务端可过滤**，但 `tags_match` 默认 `any`/`all` 会**连带捞出无标签条目**；必须 `all_strict`/`any_strict` | `list --repo/--module` 一律显式传 `all_strict` |
+| #   | 原假设                                     | 实测                                                                                                                                               | 后果                                                                                                           |
+| --- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | `delete` = `DELETE {bank}/memories` 删单条 | 那是**清空整库**（`{"deleted_count":N}`，不可逆）                                                                                                  | 删单条改用 `PATCH {"state":"invalidated"}`：软退休、list/recall 均排除、`state=valid` 可恢复                   |
+| 2   | 溯源元数据拼进 `context` 字符串            | 一条 retain 落 **2 个 unit**：`world` + 派生 `observation`；`context`/`metadata` **只在 world 上有**，observation 上恒为空；`context` 更是时有时无 | 溯源进 `metadata`（逐字存活，且 recall 也回传）；**出处再冗余写一份进 tags**（`ev:<文件:行>`）才能跟着派生条走 |
+| 3   | `patch` 字段是 `content`                   | 字段名是 **`text`**                                                                                                                                | CLI 以 `--text` 为准，`--content` 仅作兼容别名                                                                 |
+| 4   | `tags` 过滤能力待验                        | **服务端可过滤**，但 `tags_match` 默认 `any`/`all` 会**连带捞出无标签条目**；必须 `all_strict`/`any_strict`                                        | `list --repo/--module` 一律显式传 `all_strict`                                                                 |
 
 **另两条值得记住的**：
+
 - 顶层 `GET /health` 返回 `{"status":"healthy","database":"connected"}`，是探活正解；`GET /version` 的 `features.bank_llm_health=false` 说明 bank 级 LLM 健康检查在本实例没开——`status` 不要假装查过它。
 - 折叠 `observation` 是**异步**的（`stats.pending_consolidation`），retain 后立刻 list 常常只看到 world 那一条。
 
 ### 存储约定（P0-3 落地，后续 P2/P3 照此读写）
 
-| 通道 | 内容 | 理由 |
-| ---- | ---- | ---- |
-| `tags` | `repo:<仓名>` · `module:<模块>` · `ev:<文件:行>` | 唯一在 world/observation 上**都存在**且**服务端可筛**的通道 |
-| `metadata` | `{repo, module, evidence, source, date}` | 逐字存活、recall 回传；但只在 world 上，故与 tags 冗余一份 |
-| `timestamp` | `--date` 传入 | 落到原生 `date` 字段，是 list 时间筛选的锚点 |
+| 通道        | 内容                                             | 理由                                                        |
+| ----------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| `tags`      | `repo:<仓名>` · `module:<模块>` · `ev:<文件:行>` | 唯一在 world/observation 上**都存在**且**服务端可筛**的通道 |
+| `metadata`  | `{repo, module, evidence, source, date}`         | 逐字存活、recall 回传；但只在 world 上，故与 tags 冗余一份  |
+| `timestamp` | `--date` 传入                                    | 落到原生 `date` 字段，是 list 时间筛选的锚点                |
 
 **已有可抄的实现**：`scripts/hindsight-memo.py`（recall/retain/reflect 的 payload 与调用已实测）、
 `scripts/ensure-banks.py`（bank 创建 + 409 幂等）。

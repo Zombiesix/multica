@@ -12,7 +12,6 @@
  *     本脚本只排版；label 为 null 的如实标「待补」，不脑补。
  *   · 产物**可能过期**：是 init 时点的快照，权威以现算为准。文件头已写明。
  *   · 告警（warnings）默认只出现一行计数；加 --warnings 才展开明细（P1-4）。
- *   · 不接 folder-docs：不往目标仓写任何文件，只读。
  *
  * ⚠️ Git Bash 下若传 `/xxx` 形式的路径，MSYS 会把它转成 Windows 路径；
  *    传绝对路径（D:/…）或用 `MSYS_NO_PATHCONV=1` 前缀。
