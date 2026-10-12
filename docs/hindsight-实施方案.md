@@ -108,7 +108,7 @@ HINDSIGHT_API_LLM_MODEL=deepseek-v4.1-flash
 | bank_id                             | 存什么                                                                                                                  | 谁写                                | 谁读                  |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------------------- |
 | `li-expertise`                      | 人工评审标准、设计偏好、否决理由、"为什么不"                                                                            | orchestrator(done/修复后)+ 人工随手 | reviewer、planner     |
-| `multica-project`                   | 流水线全局约束(node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则)、project-map 映射、历史全局拍板 | orchestrator(init/done)             | planner、orchestrator |
+| `multica-project`                   | 流水线全局约束(node 版本锁定、node_modules 规矩、commit 单行规范、dev-zjb 基准分支规则、**开工门禁/同仓串行**)、project-map 映射、历史全局拍板 | orchestrator(init/done)             | planner、orchestrator |
 | `<产品线>`(按 project-map 实际件数) | 该仓架构约定、踩坑、API 域特点、历史需求决策摘要                                                                        | orchestrator(done)                  | planner、coder        |
 | `release-metrics`(⓪)                | 需求实际工时 vs 预估、发货状态                                                                                          | xiaoqian-manager(⑥)                 | planner(排期参考)     |
 
@@ -133,8 +133,8 @@ c.retain(bank_id='smoke-test', content='测试记忆'); print(c.recall(bank_id='
 
 # 3) 建 3 个 bank（用 UI :9999 或建库脚本，见 §8 scripts/ensure-banks.py）
 
-# 4) 预填充 multica-project 的"静态规矩"
-recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb 规则 —— 一次性 retain
+# 4) 预填充 multica-project 的"静态规矩"（**流程改动后跑 `--reseed` 覆盖，见 §8**）
+recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb 规则 / 开工门禁 —— 由 scripts/ensure-banks.py 的 STATIC_RULES 统一维护（按 marker 去重）
 ```
 
 **验收**：recall 命中率有统计、人工无感知负担。
@@ -163,7 +163,7 @@ recall(retain) node 版本锁定 / node_modules 规矩 / commit 单行 / dev-zjb
 | **fixing**                           | blocker 清空后,把"本轮 blocker 根因" retain:技术类→`<产品线>`,口味类→`li-expertise`                                                     | bank                     | `hindsight-memo.py retain`                              |
 | **done 复盘** ★                      | orchestrator 对各库 reflect("本需求有哪些可继承经验/人工否决了什么")；**摘要给人过目,人工点头才 retain 回库**                           | 复盘文件→bank            | `hindsight-memo.py reflect`(人工门禁)                   |
 
-**done 收尾不变式**(延续 README 边界):AgentTeam 只**合并到本地固定分支+删 worktree,不 push**——retain 只是把经验写进库,跟代码提交解耦。
+**done 收尾不变式**(延续 README 边界,2026-10-12 修订:弃用 worktree):AgentTeam **直接在主仓固定分支工作区改代码,改动以未提交形式留下,不 add/commit/push**——retain 只是把经验写进库,跟代码提交解耦。
 
 ### ③→④ 关键回流点：deploy 合到远程后 ◇
 

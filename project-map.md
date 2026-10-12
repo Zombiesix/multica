@@ -1,6 +1,6 @@
 # project-map / 平台产品 → gitlab 仓库 映射
 
-> AgentTeam 喂食时据 PM 卡的「产品/模块 + 客户 + 标题关键词」查此表,决定 worktree 建在哪个 gitlab 仓库下。
+> AgentTeam 喂食时据 PM 卡的「产品/模块 + 客户 + 标题关键词」查此表,决定改动落在哪个 gitlab 仓库。
 > 平台是组织维度,gitlab 名字是代码仓维度,无约定可推导,必须显式映射。**由 张三 维护确认,AI 不猜。**
 
 ## 映射表(按行从上到下匹配)
@@ -33,5 +33,6 @@ jenkins 地址前缀:`http://192.168.1.120:9990/jenkins/job/<job名>`
 ## 约定
 
 - 新增 PM 卡时先查此表;查不到 → 在 feed 时向 张三 要,确认后回填,不许猜。
-- 仓库目录以 `gitlab/` 为基准,worktree 建在该仓下。
-- worktree 名 = `<gitlab 仓库目录名>-<别名>`(例 `iho-cssd-ui-R-001`),用完把改动套回该仓本地固定分支工作区(不 add/commit,见 pipeline.md 收尾边界铁律)、`git worktree remove` 清理。
+- 仓库目录以 `gitlab/` 为基准,AgentTeam 的改动**直接落在该仓的固定分支工作区**里(不建 worktree、不切分支)。
+- 基准分支:仓内有 `dev-zjb` 用 `dev-zjb`,否则用 `dev`(非 master),主仓 checkout 常驻该分支。
+- 改动以**未提交**形式留在工作区(不 add/commit,见 pipeline.md 收尾边界铁律),由 ⑤ 步人工提交;开工前该工作区必须是干净的。

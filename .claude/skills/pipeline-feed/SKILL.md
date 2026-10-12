@@ -5,7 +5,7 @@ description: AgentTeam 前置喂食器——把一份 PM 需求/任务 markdown(
 
 # pipeline-feed / AgentTeam 需求喂食器
 
-把一份 PM 计划文件(如 `xiaoqian-manager/data/temp/<任务ID>.md`)转成流水线可消费的需求目录。这是**启动会话前**的固定动作,不是流水线本身,也不建 worktree、不提交代码。
+把一份 PM 计划文件(如 `xiaoqian-manager/data/temp/<任务ID>.md`)转成流水线可消费的需求目录。这是**启动会话前**的固定动作,不是流水线本身,也不切分支、不建 worktree、不提交代码。
 
 > 计划文件是**临时文件**,统一放 `xiaoqian-manager/data/temp/`,读完即弃、不长期保留,别往里面写回任何结论。两种来源:
 > - **任务ID 流程**:xiaoqian-manager「开始」按钮预生成的 `<任务ID>.md`;
@@ -26,12 +26,22 @@ description: AgentTeam 前置喂食器——把一份 PM 需求/任务 markdown(
 - 描述:`问题描述` 及 `分配任务说明` 正文。
 - 附件:所有图片/CDN 链接,原样保留。
 
-### 2. 查映射定 worktree
+### 2. 查映射定目标仓库 + 开工门禁
 - 读 `project-map.md`,按 PM 卡「产品/模块 + 标题」查对应 gitlab 仓库目录:
   - 表中有「判断规则」的行,**按标题关键词匹配**(如消毒供应含「PDA」→ `iho-cssd-ui-mobile`,护理系统含「护理大屏」→ `iho-nbs-web`)。
   - 命中失败 / 命中多条 / 一产品多仓 → 向 张三 要,确认后回填 `project-map.md`,不许猜。
-- 采集需求标题用于判断;worktree 名 = `<gitlab 仓库目录名>-<别名>`(例 `iho-cssd-ui-mobile-R-013345`),防重名、好识别。
-- **基准分支(固定规则)**:仓内有 `dev-zjb` 用 `dev-zjb`,否则用 `dev`(非 master)。worktree 基于该分支创建,收尾合并回该分支。
+- 采集需求标题用于判断;目标仓库 = `gitlab/` 下的仓库目录名(例 `iho-cssd-ui-mobile`)。
+- **基准分支(固定规则)**:仓内有 `dev-zjb` 用 `dev-zjb`,否则用 `dev`(非 master)。**改动直接落在该仓这个分支的工作区里**(不建 worktree、不切分支)。
+
+#### 开工门禁(不通过就停在这里,别往下走)
+改在主仓工作区里做,所以**开工前工作区必须干净**——这是替代 worktree 的隔离手段。
+```bash
+git -C gitlab/<仓库> rev-parse --abbrev-ref HEAD   # 必须 == 固定分支(dev-zjb / dev)
+git -C gitlab/<仓库> status --porcelain            # 必须为空
+```
+- 分支不对 → 停,报告实际分支,不擅自 `checkout`(可能覆盖别人的活)。
+- 工作区非空 → 停,把 `status --porcelain` 原文贴给张三,提示「上一个需求的改动还没提交,请先在 ⑤ 步 deploy 或人工 commit」。**不许**代为 commit、stash、checkout 清理。
+- 通过后把结果写进 context.md 的「关联代码位置」附近或 state.json,便于收尾复核。
 
 ### 3. 生成需求目录(脚手架)
 复制 `docs/requirements/_template/` → `docs/requirements/<别名>/`,逐个替换 `{REQUIREMENT_ID}` 占位符。
@@ -39,10 +49,10 @@ description: AgentTeam 前置喂食器——把一份 PM 需求/任务 markdown(
 ### 3. 逐文件填写
 - **context.md**:顶部先写 **需求标题**(= PM 文件首行 `# ` 标题,如 `医生站输血医嘱界面血液分类和排序`)+ **需求描述(一句话)**(由标题/问题描述浓缩,供 planner 快速理解);正文 `需求描述(全文)`=`问题描述`+`分配任务说明`;附上图片链接;`需求来源`=PM 文件路径;`关联代码位置` 若用户没给就空着,planner 会补。
 - **tasks.md**:path 为 `docs/requirements/<别名>/`;追加一行:
-  - 需求ID=`<别名>`,项目=`产品/模块`,优先级/状态 照抄(无则占位),tier 先标**待定**,worktree=`<gitlab 仓库目录名>-<别名>`(例 `iho-cssd-ui-mobile-R-013345`),入口=`/pipeline <别名>`。
+  - 需求ID=`<别名>`,项目=`产品/模块`,优先级/状态 照抄(无则占位),tier 先标**待定**,仓库=`<gitlab 仓库目录名>`(例 `iho-cssd-ui-mobile`),入口=`/pipeline <别名>`。
 - **state.json**:requirement=`<别名>`;tier 照 tasks.md;phase=init;updatedAt=现在。
 - **decisions.md**:加一行 tier 判定(原因=难度/任务类型/是否动页面)。若 tier 不确定,留占位并按住键等我确认。
-- **file-lock.md**:若改动文件已知则登记;未知留空注明「待 planner 出 plan 后回填」。
+- **file-lock.md**:若改动文件已知则登记;未知留空注明「待 planner 出 plan 后回填」。注意:同仓需求**不能并行**(共用主仓工作区),不同仓才能并行。
 - questions/answers/progress/review/review-fix/test-report/worklog 保持模板空白,不填。
 
 ### 4. tier 建议(写到 decisions.md 并在回复里给我)
@@ -54,7 +64,7 @@ description: AgentTeam 前置喂食器——把一份 PM 需求/任务 markdown(
 拿不准就标 full,并把「为什么不标 light 的原因」写进 decisions.md。
 
 ### 5. 汇报(不越权)
-返回一段概况:别名、产品/模块、需求一句话、**我建议 tier=xxx 及理由**、已生成哪些文件、需要我确认/补填的点。**到此为止** —— 不建 worktree、不克隆、不跑流水线、不动真实源码。
+返回一段概况:别名、产品/模块、目标仓库、**开工门禁结果(分支 + 工作区是否干净)**、需求一句话、**我建议 tier=xxx 及理由**、已生成哪些文件、需要我确认/补填的点。**到此为止** —— 不切分支、不建 worktree、不克隆、不跑流水线、不动真实源码。
 
 ## 注意事项
 

@@ -5,7 +5,7 @@
  * 用法：node scripts/recon.mjs <别名>      例：node scripts/recon.mjs R-371467
  *
  * 数据源：code-indexer 的 `scan`（一次调用拿全量 ProjectMap），
- *         扫的是主仓 gitlab/<仓名>，不是 worktree。
+ *         扫的是主仓 gitlab/<仓名>（改动也直接落在该仓工作区，不用 worktree）。
  * 产出：docs/requirements/<别名>/recon.md（覆盖式，幂等）
  *
  * 本脚本不含任何 LLM 判断：只做采集与渲染。空白 = 索引器无产出，
@@ -55,16 +55,17 @@ function section(md, title) {
 const reqTitle = section(context, "需求标题");
 const reqOneLiner = section(context, "需求描述（一句话）");
 
-// worktree 列形如 `iho-nurse-manager-ui-R-371467`，剥掉 -<别名> 得仓名
+// 第 5 列 = 仓库（gitlab/ 下的仓库目录名）。
+// 2026-10-12 前这里存的是 worktree 名 `<仓名>-<别名>`，改用主仓工作区后已退化为裸仓名。
 const tasksMd = fs.readFileSync(path.join(ROOT, "tasks.md"), "utf8");
 const row = tasksMd
   .split(/\r?\n/)
   .find(l => l.startsWith("|") && l.split("|").map(s => s.trim())[1] === alias);
 if (!row) fail(`no row for ${alias} in tasks.md`);
-const worktree = row.split("|").map(s => s.trim())[5];
-if (!worktree || worktree === "-") fail(`empty worktree column for ${alias} in tasks.md`);
-if (!worktree.endsWith(`-${alias}`)) fail(`worktree "${worktree}" does not end with -${alias}`);
-const repoName = worktree.slice(0, -(alias.length + 1));
+const repoName = row.split("|").map(s => s.trim())[5];
+if (!repoName || repoName === "-") fail(`empty repo column for ${alias} in tasks.md`);
+if (repoName.endsWith(`-${alias}`))
+  fail(`repo column for ${alias} still holds a worktree name "${repoName}" — put the bare repo dir name instead`);
 const repoRoot = path.join(ROOT, "gitlab", repoName);
 if (!fs.existsSync(repoRoot)) fail(`repo dir not found: ${repoRoot}`);
 

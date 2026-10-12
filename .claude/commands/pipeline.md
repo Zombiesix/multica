@@ -29,7 +29,9 @@
 由 skill 完成脚手架：
 
 - 抽字段 → 定别名 `R-<任务ID后6位>`
-- 查 `project-map.md` 定 worktree（**基准分支：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`**，非 master）
+- 查 `project-map.md` 定**目标仓库**（**基准分支：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`**，非 master）
+- **开工门禁（必须先过，不过就停）**：校验主仓 `gitlab/<仓库>` ① 当前分支 == 固定分支，② `git status --porcelain` 为空。
+  不满足 = 上一个需求的改动还没提交 → 停下来让张三先在 ⑤ 步 deploy 或人工提交，**绝不允许带着脏工作区开工**（这是替代 worktree 的隔离手段，见 done「收尾边界铁律」）。
 - 拷 `_template/` → 填 `context.md`（把 **需求标题 + 一句需求描述** 放最顶）、`tasks.md`、`decisions.md`(tier)、`state.json`(phase=planning 或 coding)
 - 需求标题与一句需求描述进了 context.md 顶部，planner 据此快速理解，plan.md 生成更快更准
   已接入则跳过，直接读 `state.json` 定下一步。
@@ -106,7 +108,7 @@ python scripts/hindsight-memo.py recall --bank li-expertise --query "<本需求�
 
 ```
 请作为 reviewer 审查 A-001。
-- 读 git diff 和 plan.md(含「将改动文件清单」)
+- 读 git diff（**限定范围**：`git -C gitlab/<仓库> diff -- <plan.md「将改动文件清单」里的文件>`）和 plan.md(含「将改动文件清单」)
 - 对照 test-report.md 核验测试是否真实跑通
 - 可选读记忆: docs/requirements/A-001/recall-expertise.md（li-expertise 人工偏好；文件缺失/为空即无）
   对照命中偏好逐条标 符合/偏离(原因)，出 review.md「口味符合度」节；发现此前纠正过的问题再犯 → 标「重复问题」
@@ -142,7 +144,7 @@ python scripts/hindsight-memo.py retain --bank li-expertise --content "<人工�
 
 ### done → 主对话
 
-写 `worklog.md`、`state.json` 置 done → 收尾（改动落工作区、删 worktree）→ 张三在本地固定分支工作区上人工测试验收（④步，详见收尾边界铁律）：
+写 `worklog.md`、`state.json` 置 done → 收尾校验（见下）→ 张三在**主仓固定分支工作区**上人工测试验收（④步，dev server 直接跑，依赖与 `.env` 都现成）：
 
 复盘（一次性 reflect，**人工门禁**；软降级，失败跳过）：
 ```bash
@@ -151,15 +153,19 @@ python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(
 ```
 把 reflect 摘要贴出来**给张三过目**；人工点头后，再把结论 retain 回库（`--context "R-<别名> 复盘"`）。**reflect 不自动入库**——防止 LLM 幻觉污染记忆；这与现状"人工只卡门禁"一致。
 
-> **收尾边界（铁律，2026-10-09 修订）**：AgentTeam 只做到「改动落入**本地固定分支工作区** + 删除 worktree」，**不进行 add / commit / push 任何代码**。固定分支=仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master），主仓 checkout 在该分支上，改动以**未提交**形式留在工作区。人工测试是总流程 ④ 步；提交、合并、推送、部署是 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成。AgentTeam 全程不触碰任何提交与远程写操作——出问题只在本地工作区可回滚。
+> **收尾边界（铁律，2026-10-12 修订：不再用 worktree）**：AgentTeam **直接在主仓固定分支工作区里改代码**，改动以**未提交**形式留在工作区，**不进行 add / commit / push 任何代码**。固定分支=仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`（非 master），主仓 checkout 常驻该分支。人工测试是总流程 ④ 步（**就在这个工作区上跑 dev server**，这是放弃 worktree 换来的：依赖、`.env`、后端代理、登录态全都现成）；提交、合并、推送、部署是 ⑤ 步，由小前端在 xiaoqian-manager 的 deploy 阶段手动完成。AgentTeam 全程不触碰任何提交与远程写操作。
+>
+> **隔离怎么保证（替代 worktree 的两条）**：
+> ① **开工门禁** —— init 阶段校验主仓在固定分支且工作区干净，脏就停（上一条需求必须已在 ⑤ 步提交掉）；
+> ② **改动白名单** —— coder/reviewer 只认 plan.md「将改动文件清单」内的文件，收尾按它校验。
+> 因此**同一仓库同一时间只能跑一个需求**（file-lock 的并行只在不同仓之间成立）。
 
-1. 建 worktree 时用 detached 基线（不建分支）：`git worktree add --detach ../<仓库>-<别名> <固定分支>`。coder 全程只改工作区文件，不 commit。
-2. 收尾把改动套回主仓固定分支工作区（不提交）：
-   - 若 worktree 有未跟踪新文件，先 `git -C <worktree> add -A -N`（intent-to-add，仅让 diff 能看到新文件，不产生提交）；
-   - `git -C <worktree> diff > <patch文件>`，然后 `git -C <主仓> apply <patch文件>`（默认只落工作区、不暂存）；
-   - 校验 `git -C <主仓> status`：只应出现本需求的改动（modified / untargeted untracked），**不得出现暂存区变化**，有杂项先停下来查。
-3. **删除 worktree 前先摘掉它指向主仓的 `node_modules` 符号链接**（`unlink <worktree>/node_modules`，若为链接）——`git worktree remove --force` 会顺着该链接删进主仓 node_modules，把主仓依赖清空。再 `git worktree remove --force ../<仓库>-<别名>`（detached 无分支可删，`git worktree prune` 兜底）。worktree 依赖一律走 pnpm 全局 store，禁止手动符号链接指回主仓工作树内部。
-4. 清 `file-lock.md` 中本需求条目。worktree 名即 `<仓库>-<别名>`。
+1. 开工门禁已在 init 阶段校验（主仓在固定分支 + `git status --porcelain` 为空）。不满足就不开工，没有例外。
+2. coder 全程直接写主仓工作区，只改 plan.md「将改动文件清单」内的文件；不 `add`、不 `commit`、不 `stash`。
+3. 收尾校验（不通过就停下查，别往下走）：
+   - `git -C gitlab/<仓库> status --porcelain` —— **只应出现本需求清单内的改动**；出现清单外文件 → 写 orchestrator-log 并停下来问张三，不擅自清理别人的改动。
+   - `git -C gitlab/<仓库> diff --cached --name-only` —— **必须为空**（证明没有任何东西被暂存或提交）。
+4. 清 `file-lock.md` 中本需求条目。
 5. 删 init 时的计划临时文件（`rm -f xiaoqian-manager/data/temp/<启动时用的那个 md>`；任务ID流程可能已被 xiaoqian-manager 删过，rm -f 幂等；口头流程一定是主对话这里删）。
 
 ## 轨道约束
@@ -168,4 +174,4 @@ python scripts/hindsight-memo.py reflect --bank li-expertise --query "本需求(
 - orchestrator 每次收到 subagent 摘要后，把「下一步 + 已知信息」写 orchestrator-log.md 再丢弃对话。
 - **全局约束（对流水线主对话与所有 subagent 生效）**：
   1. **禁止更改 node / npm / yarn 版本**——不执行任何 `nvm use`、`node -v` 引发的变更、`npm`/`yarn`/`pnpm` 全局切换或 `engines`/`.nvmrc`/package.json 里的版本改动。版本锁定为现状。
-  2. **涉及 `node_modules` 文件夹数据修改时，必须先严格提示**：在改动前明确打出一句「**因为 <原因> 需要进行 node_modules 修改**」（如依赖安装、重新构建、安装新包），并征得同意后才执行。不得静默 install / 改依赖 / 动 link、不得在收尾工作中顺手清改 node_modules（删 worktree 前对符号链接的 unlink 例外，见 done 阶段）。
+  2. **涉及 `node_modules` 文件夹数据修改时，必须先严格提示**：在改动前明确打出一句「**因为 <原因> 需要进行 node_modules 修改**」（如依赖安装、重新构建、安装新包），并征得同意后才执行。不得静默 install / 改依赖 / 动 link、不得在收尾工作中顺手清改 node_modules。

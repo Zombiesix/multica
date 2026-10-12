@@ -55,11 +55,15 @@
 
 ### 一个重要的边界（②③ vs ⑤）
 
-**AgentTeam（②③）的产物只到「代码合并到本地分支 + 删除 worktree」为止，绝不做 commit / push 远程**：
+**AgentTeam（②③）直接在主仓固定分支的工作区里改代码，改动以「未提交」形式留下，绝不做 add / commit / push 远程**：
 
-- 它把 worktree 里的代码合并到**本地固定分支**（仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`，非 master），然后删除 worktree。
-- **远程提交、push、合并到目标分支**是 ⑤ 步，由 `小前端` 在 xiaoqian-manager 的 deploy 阶段手动完成（含 cherry-pick）。
+- 它改的就是 `gitlab/<仓>` 这个**主仓工作区**（仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`，非 master），**不建 worktree、不切分支、不提交**。
+- 好处是 ④ 人工测试**就在这个工作区上跑 dev server**，依赖、`.env`、后端代理、登录态全都现成。
+- **远程提交、push、合并到目标分支**是 ⑤ 步，由 `小前端` 在 xiaoqian-manager 的 deploy 阶段手动完成（含 cherry-pick）。该阶段的代码本就基于主仓工作区，且会拒绝分离头指针状态，与这套模型天然一致。
 - 这样 AI 永远接触不到远程写操作，出问题也是"本地可回滚、远程有人把关"。
+
+> **隔离靠什么（2026-10-12 起弃用 worktree）**：① **开工门禁**——init 阶段校验主仓在固定分支且 `git status --porcelain` 为空，脏就停下来等人工提交；② **改动白名单**——coder/reviewer 只认 plan.md「将改动文件清单」内的文件，收尾按它校验。
+> 代价是**同一仓库同一时间只能跑一个需求**（并行只在不同仓之间成立）。换来的正是上面那条：随时能起服务看效果。
 
 ---
 
@@ -87,7 +91,9 @@
 3. **拷模板**：复制 `_template/` → `docs/requirements/R-013345/`，context.md 顶部放**需求标题 + 一句话需求描述**。
 4. **登记**：tasks.md 新行、state.json(phase=init)、decisions.md(tier 判定)、file-lock.md。
 5. **tier 建议**：改文案/单文件小修 → light；新增组件、动 store/表格/页面、多步任务 → full；拿不准标 full 并写明原因。
-6. **到此为止** —— 不建 worktree、不动真实源码，回到流水线继续。
+6. **到此为止** —— 不切分支、不建 worktree、不动真实源码，回到流水线继续。
+
+> **开工门禁（feed 阶段前置校验）**：主仓 `gitlab/<仓库>` 必须 `HEAD == 固定分支` 且 `git status --porcelain` 为空；不满足就停下来让张三先在 ⑤ 步提交，绝不允许带着脏工作区开工。这是替代 worktree 的隔离手段。
 
 ### AgentTeam 内部流程（full）
 
@@ -96,7 +102,7 @@
 > /pipeline resume R-16931     # 中断：从 state.json + orchestrator-log.md 重建
 ```
 
-主对话读 state → feed(如需)→ recon 事实底稿(`node scripts/recon.mjs <ID>`，确定性、覆盖式)→ @planner 出计划(可能的 Q 等答) → 人工确认拍板 `decisions.md` → @coder 编码跑测 → @reviewer 审查 → blocker 回 @coder 修(≤2轮)→ verify → done（**合并到本地固定分支 + 删 worktree，不 push**）。
+主对话读 state → feed(如需，含开工门禁)→ recon 事实底稿(`node scripts/recon.mjs <ID>`，确定性、覆盖式)→ @planner 出计划(可能的 Q 等答) → 人工确认拍板 `decisions.md` → @coder 编码跑测 → @reviewer 审查 → blocker 回 @coder 修(≤2轮)→ verify → done（**改动留在主仓固定分支工作区，不 add/commit/push**）。
 
 ### light 流程
 
@@ -210,14 +216,14 @@ yarn assistant:map gitlab/<仓>
 | 总流程步骤             | 触发点                             | 实现位置                                                                                 |
 | ---------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- |
 | ① 获取需求             | 同步按钮(Sync)                     | `lib/server/teamwork/client.ts`(fetchList,user=小前端) + `mapper.ts` → `data/tasks.json` |
-| ②③ 规划+编码+审查+修复 | 卡片→worktree 路径给 AgentTeam     | 见 §2；`/pipeline` 剧本 + 4 subagent                                                     |
+| ②③ 规划+编码+审查+修复 | 卡片「开始」→ 拉起 `claude /pipeline <任务ID>` | 见 §2；`/pipeline` 剧本 + 4 subagent（xiaoqian 只传**任务ID** + 临时计划 md，不传路径） |
 | ④ 人工测试             | test 阶段 点完成                   | `components/task/StageSheet.tsx`(test stage)                                             |
 | ⑤ 提交合并             | deploy 阶段 选仓库+目标分支 点完成 | `lib/server/git/deploy.ts`(pull→commit→push→cherry-pick→push)                            |
 | ⑥ 填工时               | 工时入口                           | `lib/server/teamwork/client.ts` 的 `saveWorkHours`                                       |
 
 ## 10. 目录约定
 
-分两层：**multica 家**（本目录，AgentTeam / assistant 会话都开在这）与 **worktree**（产品仓内，纯代码）。
+分两处：**multica 家**（本目录，AgentTeam / assistant 会话都开在这）与 **产品仓工作区**（`gitlab/<仓>`，AgentTeam 唯一动代码的地方）。
 
 **multica 家 `d:\multica`**
 
@@ -229,7 +235,7 @@ yarn assistant:map gitlab/<仓>
   skills/pipeline-feed/                 喂食 skill
   skills/assistant/                     助手入口 skill + references/{service-protocol,what-to-store}.md
 project-map.md            平台产品 → gitlab 仓库映射(张三维护,喂食用)
-tasks.md                  需求元信息表(含 tier)
+tasks.md                  需求元信息表(含 tier、**仓库**列——recon 靠它定位仓)
 file-lock.md              并行冲突仲裁表
 package.json              工作区脚本(`yarn om` / `assistant:*` 等)
 docs/requirements/
@@ -250,11 +256,13 @@ swagger-mcp-server/      swagger-multi MCP 补丁版服务器,②③步用
 om/                      发版看板(独立,见 §16)
 ```
 
-**worktree（纯代码工作区）**
+**产品仓工作区（`gitlab/<仓>`，AgentTeam 动代码的唯一地方）**
 
-- 建在 `gitlab/<project-map 仓库目录>/` 下（与 multica 同级的 `gitlab/` 目录），只被 coder 读写；不进流程状态、不复制 `.claude/`、不复制 `docs/`。
-- **基准分支（固定规则）**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`(非 master)。worktree 基于该分支创建，收尾合并回该分支（**本地合并，见 §1 边界**）。
-- 助手**只读** `gitlab/<仓>`：不建 worktree、不写任何文件。
+- 与 multica 同级的 `gitlab/` 目录下，每个仓一份**主仓 checkout**，不建 worktree、不切分支。
+- **基准分支（固定规则）**：仓内有 `dev-zjb` 用 `dev-zjb`，否则用 `dev`(非 master)，主仓**常驻**该分支。
+- coder 直接改这里的工作区文件，改动以**未提交**形式留下（**不 add/commit/push，见 §1 边界**）；④ 人工测试也在这里跑 dev server。
+- **开工前必须干净**：init 阶段校验 `git status --porcelain` 为空，脏就停（见 §11 门禁）。**同仓同时只能跑一个需求。**
+- 助手**只读** `gitlab/<仓>`：不写任何文件、不建 worktree。
 
 **archive/（历史归档,禁区）**
 
@@ -271,22 +279,25 @@ om/                      发版看板(独立,见 §16)
 3. reviewer 有 blocker 必须回 coder 修(full)
 4. 修复 ≤ 2 轮,超了转人工
 5. 每步产物必须落盘
-6. 每需求独立 worktree + 独立会话
-7. coder 不跨 worktree
-8. subagent 只收摘要,不接完整代码/推理
-9. 敏感文件(.env\*/auth.txt)必须人工审批
-10. 人工验收后才合并,随后清理 worktree（**只合本地固定分支，远程提交留给 ⑤**）
+6. **开工门禁：主仓在固定分支 + 工作区干净**，不干净不开工（替代 worktree 的隔离手段）
+7. **同仓串行**：一个仓库同一时间只跑一个需求；并行只在不同仓之间
+8. 每需求独立会话（上下文隔离，与 worktree 无关）
+9. coder/reviewer 只认 plan.md「将改动文件清单」，不越界、不动清单外的改动
+10. subagent 只收摘要,不接完整代码/推理
+11. 敏感文件(.env\*/auth.txt)必须人工审批
+12. 人工验收后才提交合并——**AgentTeam 只留未提交改动，提交/推送是 ⑤ 步，由人做**
 
 ### 全局约束（对流水线主对话与所有 subagent 生效）
 
 - **禁止更改 node / npm / yarn 版本**——不执行 `nvm use`、全局切换或 `engines`/`.nvmrc`/package.json 里的版本改动。版本锁定为现状。
-- **涉及 `node_modules` 数据修改时,必须先严格提示**——改动前打出「**因为 <原因> 需要进行 node_modules 修改**」并征得同意后才执行;不得静默 install / 改依赖 / 动 link(done 阶段删 worktree 前的 unlink 例外)。
+- **涉及 `node_modules` 数据修改时,必须先严格提示**——改动前打出「**因为 <原因> 需要进行 node_modules 修改**」并征得同意后才执行;不得静默 install / 改依赖 / 动 link。
+- **禁止 add / commit / push / stash**——改动一律以未提交形式留在主仓工作区；工作区里出现清单外的改动要停下来报告，不擅自清理。
 
 ### 并行与秘密
 
-- 并行前先查 `file-lock.md`;planner 的 plan.md「将改动文件清单」是锁依据。
+- **同仓串行（硬规则）**：共用主仓工作区，同仓两需求会互相污染——比 file-lock 更硬，开工门禁会自动拦住第二个。
+- 不同仓可以并行；并行前先查 `file-lock.md`，planner 的 plan.md「将改动文件清单」是锁依据。
 - 改动触及 `.env*` 等敏感文件 → planner 升级成 Q → 你 `decisions.md` 审批。
-- 同项目同文件的需求不建议并行。
 
 ---
 
@@ -428,7 +439,7 @@ P0–P4 已实施完毕（记忆 CLI / 项目地图 / 答题 skill / 按需存 /
 
 ## 附：project-map / 平台产品 → gitlab 仓库 映射
 
-> AgentTeam 喂食时据 PM 卡的「产品/模块 + 客户 + 标题关键词」查此表，决定 worktree 建在哪个 gitlab 仓库下。**由 张三 维护确认,AI 不猜。**
+> AgentTeam 喂食时据 PM 卡的「产品/模块 + 客户 + 标题关键词」查此表，决定改动落在哪个 gitlab 仓库。**由 张三 维护确认,AI 不猜。**
 > 助手也用同一张表定位目标仓（只读）。
 
 | 平台产品/模块        | 判断规则(标题关键词)              | 命中 → gitlab 仓库目录      | jenkins job      |
